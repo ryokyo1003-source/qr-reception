@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>自動受付 | 上桂動物病院</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --primary: #1a2f3e;
+  --accent: #2d7aad;
+  --success: #2d9e6b;
+  --danger: #c0392b;
+  --warning: #e8a020;
+  --harope: #7a3dad;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  font-family: 'Hiragino Kaku Gothic ProN', 'Helvetica Neue', 'Noto Sans JP', sans-serif;
+  background: #0a1a25;
+  color: white;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ===== KIOSK SCREEN ===== */
+#kioskScreen {
+  position: fixed; inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #0a1a25 0%, #0d2a1c 100%);
+}
+
+.kiosk-header {
+  padding: 28px 32px 12px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.hospital-name {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.9);
+}
+
+.hospital-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.18em;
+  margin-top: 4px;
+}
+
+/* Camera area */
+.camera-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+#reader {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+/* html5-qrcode internal overrides */
+#reader > div:not(:has(video)) { display: none !important; }
+#reader img { display: none !important; }
+
+/* QR guide corners */
+.qr-frame {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 240px; height: 240px;
+  pointer-events: none;
+}
+
+.qr-frame::before, .qr-frame::after,
+.qr-frame-inner::before, .qr-frame-inner::after {
+  content: '';
+  position: absolute;
+  width: 42px; height: 42px;
+  border-color: rgba(45,158,107,0.9);
+  border-style: solid;
+}
+
+.qr-frame::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+.qr-frame::after  { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+.qr-frame-inner::before { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+.qr-frame-inner::after  { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+
+.scan-line {
+  position: absolute;
+  left: 4px; right: 4px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(45,158,107,0.9), transparent);
+  animation: scanMove 2s linear infinite;
+}
+@keyframes scanMove { from { top: 0; } to { top: 100%; } }
+
+/* Dim overlay on camera (except center) */
+.camera-overlay {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 280px 280px at center, transparent 45%, rgba(10,26,37,0.65) 70%);
+  pointer-events: none;
+}
+
+.kiosk-footer {
+  padding: 18px 32px 40px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.kiosk-instruction {
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.88);
+}
+
+.kiosk-instruction-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+  margin-top: 6px;
+  letter-spacing: 0.06em;
+}
+
+/* Hidden staff button — bottom-right corner */
+#staffCornerBtn {
+  position: fixed;
+  bottom: 0; right: 0;
+  width: 64px; height: 64px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 50;
+  opacity: 0;
+}
+
+/* ===== CONFIRMATION OVERLAY ===== */
+#confirmOverlay {
+  position: fixed; inset: 0;
+  background: rgba(10,26,37,0.97);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  padding: 32px;
+}
+
+#confirmOverlay.show {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.confirm-icon {
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  background: var(--success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+  margin-bottom: 24px;
+  animation: popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+}
+
+@keyframes popIn {
+  from { transform: scale(0); }
+  to   { transform: scale(1); }
+}
+
+.confirm-title-text {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--success);
+  margin-bottom: 16px;
+  letter-spacing: 0.04em;
+}
+
+.confirm-pet-name {
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 6px;
+}
+
+.confirm-owner-name {
+  font-size: 20px;
+  color: rgba(255,255,255,0.55);
+  margin-bottom: 28px;
+}
+
+.confirm-message {
+  font-size: 16px;
+  color: rgba(255,255,255,0.55);
+  text-align: center;
+  line-height: 2;
+}
+
+.confirm-countdown {
+  margin-top: 18px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.25);
+}
+
+/* ===== PIN OVERLAY ===== */
+#pinOverlay {
+  position: fixed; inset: 0;
+  background: rgba(10,26,37,0.97);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 400;
+  gap: 0;
+}
+
+#pinOverlay.show { display: flex; }
+
+.pin-title { font-size: 17px; font-weight: 600; margin-bottom: 28px; color: rgba(255,255,255,0.8); }
+
+.pin-dots {
+  display: flex; gap: 14px;
+  margin-bottom: 28px;
+}
+
+.pin-dot {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.3);
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.pin-dot.filled { background: white; border-color: white; }
+
+.pin-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 80px);
+  gap: 12px;
+}
+
+.pin-key {
+  height: 76px;
+  background: rgba(255,255,255,0.08);
+  border: none;
+  border-radius: 14px;
+  color: white;
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pin-key:active { background: rgba(255,255,255,0.22); }
+.pin-key.cancel { background: rgba(192,57,43,0.25); font-size: 14px; font-weight: 600; }
+.pin-key.backspace { font-size: 20px; }
+.pin-key.wide { grid-column: span 2; }
+
+.pin-error {
+  height: 22px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: #e87777;
+}
+
+/* ===== STAFF PANEL ===== */
+#staffPanel {
+  position: fixed; inset: 0;
+  background: #f0f4f8;
+  color: var(--primary);
+  z-index: 300;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#staffPanel.show { display: flex; }
+
+/* Staff topbar */
+.staff-topbar {
+  background: var(--primary);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 10px;
+}
+
+.staff-topbar-left { display: flex; align-items: center; gap: 14px; }
+
+.staff-title { color: white; font-size: 15px; font-weight: 700; letter-spacing: 0.08em; }
+
+.topbar-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.topbar-btn.back { background: rgba(255,255,255,0.15); color: white; }
+.topbar-btn.export { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.85); }
+.topbar-btn.clear { background: rgba(192,57,43,0.35); color: rgba(255,180,180,0.9); }
+
+/* Staff body */
+.staff-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 14px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Stats */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 12px 8px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(26,47,62,0.07);
+}
+
+.stat-num { font-size: 24px; font-weight: 700; line-height: 1; color: var(--primary); }
+.stat-num.warn { color: var(--warning); }
+.stat-num.info { color: var(--accent); }
+.stat-num.ok   { color: var(--success); }
+.stat-label { font-size: 9px; color: #8a9db0; margin-top: 4px; letter-spacing: 0.06em; }
+
+/* Cards */
+.s-card {
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(26,47,62,0.06);
+  overflow: hidden;
+}
+
+.s-card-header {
+  padding: 11px 14px;
+  border-bottom: 1px solid #e8eef4;
+  font-size: 10px;
+  font-weight: 700;
+  color: #8a9db0;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.new-badge {
+  background: var(--warning);
+  color: white;
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  animation: blink 1s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.5} }
+
+/* Reception table */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.rec-table { width: 100%; border-collapse: collapse; }
+
+.rec-table th {
+  background: #f6f9fc;
+  padding: 8px 10px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #8a9db0;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #dce6ef;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.rec-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid #f0f4f8;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.rec-table tr:last-child td { border-bottom: none; }
+
+.rec-table tr.is-new td { background: #f0faf5; }
+
+.status-pill {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.sp-w { background: #fef6e7; color: var(--warning); }
+.sp-c { background: #eaf4fb; color: var(--accent); }
+.sp-d { background: #eaf7f0; color: var(--success); }
+
+.row-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+
+.row-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rb-pet { background: #eaf4fb; color: var(--accent); }
+.rb-pet:active { background: var(--accent); color: white; }
+.rb-har { background: #f0eafb; color: var(--harope); }
+.rb-har:active { background: var(--harope); color: white; }
+.rb-call { background: #fef6e7; color: var(--warning); }
+.rb-call:active { background: var(--warning); color: white; }
+.rb-done { background: #eaf7f0; color: var(--success); }
+.rb-done:active { background: var(--success); color: white; }
+.rb-del { background: #f5f5f5; color: #aaa; }
+.rb-del:active { background: #fdf0ef; color: var(--danger); }
+
+.empty-cell { padding: 32px; text-align: center; color: #8a9db0; font-size: 13px; line-height: 2; }
+
+/* CSV card */
+.csv-drop {
+  border: 2px dashed #dce6ef;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s;
+  margin: 14px;
+}
+
+.csv-drop:hover, .csv-drop.drag-over {
+  border-color: var(--accent);
+  background: #eaf4fb;
+}
+
+.csv-drop input[type="file"] {
+  position: absolute; inset: 0;
+  opacity: 0; cursor: pointer;
+  width: 100%; height: 100%;
+}
+
+.csv-msg {
+  margin: 0 14px 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  display: none;
+}
+.csv-msg.ok  { background: #eaf7f0; color: var(--success); display: block; }
+.csv-msg.err { background: #fdf0ef; color: var(--danger);  display: block; }
+
+/* Settings card */
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0f4f8;
+}
+.setting-row:last-child { border-bottom: none; }
+
+.setting-label { font-size: 12px; color: #8a9db0; min-width: 110px; flex-shrink: 0; }
+
+.setting-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1.5px solid #dce6ef;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  min-width: 0;
+}
+.setting-input:focus { border-color: var(--accent); }
+
+.setting-save {
+  padding: 8px 14px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Toast */
+#toast {
+  position: fixed;
+  bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--primary);
+  color: white;
+  padding: 10px 22px;
+  border-radius: 40px;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.22s ease;
+  white-space: nowrap;
+  z-index: 600;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.green { background: var(--success); }
+#toast.blue  { background: var(--accent); }
+
+/* HTTPS warning */
+#httpsWarning {
+  position: fixed;
+  bottom: 80px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(192,57,43,0.9);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.6;
+  z-index: 50;
+  display: none;
+  max-width: 300px;
+}
+</style>
+</head>
+<body>
+
+<!-- ========== KIOSK SCREEN ========== -->
+<div id="kioskScreen">
+  <div class="kiosk-header">
+    <div class="hospital-name">上桂動物病院</div>
+    <div class="hospital-sub">KAMIKATSURA ANIMAL HOSPITAL</div>
+  </div>
+
+  <div class="camera-wrap">
+    <div id="reader"></div>
+    <div class="camera-overlay"></div>
+    <div class="qr-frame">
+      <div class="qr-frame-inner"></div>
+      <div class="scan-line"></div>
+    </div>
+  </div>
+
+  <div class="kiosk-footer">
+    <div class="kiosk-instruction">診察券のQRコードをかざしてください</div>
+    <div class="kiosk-instruction-sub">Please show your QR code to the camera</div>
+  </div>
+</div>
+
+<!-- Hidden staff trigger (bottom-right corner) -->
+<button id="staffCornerBtn" onclick="requestPin()"></button>
+
+<!-- ========== CONFIRMATION OVERLAY ========== -->
+<div id="confirmOverlay">
+  <div class="confirm-icon" id="confirmIcon">✓</div>
+  <div class="confirm-title-text" id="confirmTitle">受付しました</div>
+  <div class="confirm-pet-name" id="confirmPet"></div>
+  <div class="confirm-owner-name" id="confirmOwner"></div>
+  <div class="confirm-message" id="confirmMsg">スタッフが確認いたします<br>そのままお待ちください</div>
+  <div class="confirm-countdown" id="confirmCountdown"></div>
+</div>
+
+<!-- ========== PIN OVERLAY ========== -->
+<div id="pinOverlay">
+  <div class="pin-title">スタッフPINを入力</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-keypad">
+    <button class="pin-key" onclick="pinKey('1')">1</button>
+    <button class="pin-key" onclick="pinKey('2')">2</button>
+    <button class="pin-key" onclick="pinKey('3')">3</button>
+    <button class="pin-key" onclick="pinKey('4')">4</button>
+    <button class="pin-key" onclick="pinKey('5')">5</button>
+    <button class="pin-key" onclick="pinKey('6')">6</button>
+    <button class="pin-key" onclick="pinKey('7')">7</button>
+    <button class="pin-key" onclick="pinKey('8')">8</button>
+    <button class="pin-key" onclick="pinKey('9')">9</button>
+    <button class="pin-key cancel" onclick="pinCancel()">取消</button>
+    <button class="pin-key" onclick="pinKey('0')">0</button>
+    <button class="pin-key backspace" onclick="pinDel()">⌫</button>
+  </div>
+  <div class="pin-error" id="pinError"></div>
+</div>
+
+<!-- ========== STAFF PANEL ========== -->
+<div id="staffPanel">
+  <div class="staff-topbar">
+    <div class="staff-topbar-left">
+      <button class="topbar-btn back" onclick="closeStaff()">← 受付画面</button>
+      <div class="staff-title">スタッフパネル</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="topbar-btn export" onclick="exportCSV()">⬇ CSV出力</button>
+      <button class="topbar-btn clear" onclick="clearAll()">🗑 クリア</button>
+    </div>
+  </div>
+
+  <div class="staff-body">
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num" id="sTotal">0</div>
+        <div class="stat-label">本日合計</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num warn" id="sWaiting">0</div>
+        <div class="stat-label">待機中</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num info" id="sCalled">0</div>
+        <div class="stat-label">呼び出し済</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num ok" id="sDone">0</div>
+        <div class="stat-label">診察完了</div>
+      </div>
+    </div>
+
+    <!-- Reception list -->
+    <div class="s-card">
+      <div class="s-card-header">
+        本日の受付一覧
+        <span class="new-badge" id="newBadge" style="display:none">新規</span>
+      </div>
+      <div class="table-scroll">
+        <table class="rec-table">
+          <thead>
+            <tr>
+              <th>受付</th>
+              <th>カルテ</th>
+              <th>ペット名</th>
+              <th>飼い主</th>
+              <th>状態</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="recBody">
+            <tr><td colspan="6" class="empty-cell">受付がありません<br>患者がQRをスキャンすると表示されます</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CSV -->
+    <div class="s-card">
+      <div class="s-card-header">患者データ（CSV）</div>
+      <div class="csv-drop" id="csvDrop">
+        <input type="file" accept=".csv" onchange="loadCSV(this)">
+        <div style="font-size:26px;margin-bottom:8px;">📂</div>
+        <div style="font-size:13px;color:#8a9db0;line-height:1.7;">
+          ペトレルプラスCSVをタップして選択<br>または ドラッグ＆ドロップ
+        </div>
+      </div>
+      <div class="csv-msg" id="csvMsg"></div>
+    </div>
+
+    <!-- Settings -->
+    <div class="s-card">
+      <div class="s-card-header">設定</div>
+
+      <div class="setting-row">
+        <div class="setting-label">ハロぺH URL</div>
+        <input class="setting-input" id="haropeUrl" type="url"
+          placeholder="https://例.com/患者/{owner_id}">
+        <button class="setting-save" onclick="saveSettings()">保存</button>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">スタッフPIN</div>
+        <input class="setting-input" id="pinInput" type="password"
+          placeholder="4桁（初期値: 1234）" maxlength="4" inputmode="numeric">
+        <button class="setting-save" onclick="savePin()">変更</button>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">受付後に自動で<br>ペトレルを開く</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;flex:1;">
+          <input type="checkbox" id="autoOpen" style="width:18px;height:18px;">
+          QRスキャン時に自動でペトレルプラスを開く
+        </label>
+      </div>
+    </div>
+
+    <!-- Bottom spacer -->
+    <div style="height:8px;"></div>
+  </div>
+</div>
+
+<!-- HTTPS warning -->
+<div id="httpsWarning">
+  カメラ機能にはHTTPS接続が必要です<br>
+  <span style="font-size:10px;opacity:0.75;">手動入力モード（スタッフPIN→スキャナタブ）をご利用ください</span>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ============================================
+// STATE
+// ============================================
+let db = {};          // karte_number → patient row
+let reception = [];   // today's check-in list
+let qrScanner = null;
+let scanCooldown = false;
+let confirmTimer = null;
+
+const settings = {
+  pin: '1234',
+  haropeUrl: '',
+  autoOpen: false
+};
+
+// ============================================
+// INIT
+// ============================================
+window.addEventListener('load', () => {
+  loadSettings();
+  loadStoredData();
+  renderTable();
+  updateStats();
+  startCamera();
+});
+
+// ============================================
+// SETTINGS
+// ============================================
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('ksk_settings') || '{}');
+    if (s.pin)       settings.pin      = s.pin;
+    if (s.haropeUrl !== undefined) settings.haropeUrl = s.haropeUrl;
+    if (s.autoOpen  !== undefined) settings.autoOpen  = s.autoOpen;
+  } catch (e) {}
+  // Default ハロぺH URL
+  if (!settings.haropeUrl) settings.haropeUrl = 'https://hospital.halope.jp/acceptance';
+  document.getElementById('haropeUrl').value = settings.haropeUrl;
+  document.getElementById('autoOpen').checked = settings.autoOpen;
+}
+
+function saveSettings() {
+  settings.haropeUrl = document.getElementById('haropeUrl').value.trim();
+  settings.autoOpen  = document.getElementById('autoOpen').checked;
+  persistSettings();
+  toast('設定を保存しました', 'green');
+  renderTable(); // refresh to show/hide ハロぺH buttons
+}
+
+function savePin() {
+  const v = document.getElementById('pinInput').value.trim();
+  if (!/^\d{4}$/.test(v)) { toast('PINは4桁の数字で入力してください', ''); return; }
+  settings.pin = v;
+  persistSettings();
+  document.getElementById('pinInput').value = '';
+  toast('PINを変更しました', 'green');
+}
+
+function persistSettings() {
+  localStorage.setItem('ksk_settings', JSON.stringify(settings));
+}
+
+// ============================================
+// DATA PERSISTENCE
+// ============================================
+function loadStoredData() {
+  try {
+    const csvRaw = localStorage.getItem('ksk_db');
+    if (csvRaw) {
+      db = JSON.parse(csvRaw);
+      const n = Object.keys(db).length;
+      showCsvMsg('ok', `✓ ${n.toLocaleString()}件（前回読込）`);
+    }
+    const today = todayStr();
+    if (localStorage.getItem('ksk_date') === today) {
+      const r = localStorage.getItem('ksk_reception');
+      if (r) reception = JSON.parse(r);
+    } else {
+      reception = [];
+      localStorage.setItem('ksk_date', today);
+      localStorage.removeItem('ksk_reception');
+    }
+  } catch (e) { db = {}; reception = []; }
+}
+
+function saveReception() {
+  localStorage.setItem('ksk_reception', JSON.stringify(reception));
+  localStorage.setItem('ksk_date', todayStr());
+}
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+function timeNow() {
+  const d = new Date();
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// ============================================
+// CSV
+// ============================================
+function loadCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try   { parseCSV(e.target.result); }
+    catch (err) { showCsvMsg('err', 'エラー: ' + err.message); }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseCSV(text) {
+  text = text.replace(/^\uFEFF/, '');
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) throw new Error('データが空です');
+
+  const headers = csvLine(lines[0]);
+  const required = ['karte_number', 'owner_name', 'pet_name', 'owner_id'];
+  for (const col of required) {
+    if (!headers.includes(col)) throw new Error(`列 "${col}" が見つかりません`);
+  }
+
+  db = {};
+  let count = 0;
+  for (let i = 1; i < lines.length; i++) {
+    const vals = csvLine(lines[i]);
+    if (vals.length < 2) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = (vals[idx] || '').trim(); });
+    if (!row.karte_number) continue;
+    db[row.karte_number] = row;
+    count++;
+  }
+
+  showCsvMsg('ok', `✓ ${count.toLocaleString()}件 読み込み完了`);
+  try { localStorage.setItem('ksk_db', JSON.stringify(db)); } catch (e) { /* full */ }
+}
+
+function csvLine(line) {
+  const res = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+      else { inQ = !inQ; }
+    } else if (c === ',' && !inQ) {
+      res.push(cur); cur = '';
+    } else { cur += c; }
+  }
+  res.push(cur);
+  return res;
+}
+
+function showCsvMsg(type, msg) {
+  const el = document.getElementById('csvMsg');
+  el.className = 'csv-msg ' + type;
+  el.textContent = msg;
+}
+
+// ============================================
+// CAMERA
+// ============================================
+function startCamera() {
+  if (qrScanner) return;
+
+  // Check for secure context
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    document.getElementById('httpsWarning').style.display = 'block';
+    showCameraFallback();
+    return;
+  }
+
+  qrScanner = new Html5Qrcode('reader');
+
+  Html5Qrcode.getCameras().then(cameras => {
+    if (!cameras || cameras.length === 0) {
+      showCameraFallback('カメラが見つかりません');
+      return;
+    }
+    // Prefer rear camera
+    const rear = cameras.find(c => /back|rear|environment/i.test(c.label));
+    const camId = (rear || cameras[cameras.length - 1]).id;
+
+    qrScanner.start(
+      camId,
+      { fps: 10, qrbox: { width: 230, height: 230 } },
+      raw => {
+        if (scanCooldown) return;
+        scanCooldown = true;
+        setTimeout(() => { scanCooldown = false; }, 3000);
+        handleQR(raw.trim());
+      },
+      () => {}
+    ).catch(err => {
+      showCameraFallback('カメラの起動に失敗しました');
+    });
+
+  }).catch(() => {
+    showCameraFallback('カメラへのアクセスが拒否されました');
+  });
+}
+
+function showCameraFallback(msg) {
+  qrScanner = null;
+  const footer = document.querySelector('.kiosk-footer');
+  footer.innerHTML = `
+    <div style="color:#e87777;font-size:15px;margin-bottom:10px;">
+      ⚠ ${msg || 'カメラを使用できません'}
+    </div>
+    <div style="color:rgba(255,255,255,0.35);font-size:12px;line-height:1.8;">
+      スタッフパネルのスキャナ入力でご対応ください<br>
+      （右下コーナーをタップ → PIN入力）
+    </div>`;
+}
+
+// ============================================
+// QR PROCESSING
+// ============================================
+function handleQR(raw) {
+  // Allow both plain karte_number and JSON-wrapped
+  let karte = raw;
+  try { const o = JSON.parse(raw); if (o.id) karte = o.id; } catch (e) {}
+
+  if (Object.keys(db).length === 0) {
+    showConfirm('error', null);
+    return;
+  }
+
+  const patient = db[karte];
+  if (!patient) {
+    showConfirm('notfound', null);
+    return;
+  }
+
+  const dup = reception.find(r => r.karte_number === karte);
+  if (dup) {
+    showConfirm('dup', patient);
+    return;
+  }
+
+  doCheckIn(patient);
+}
+
+function doCheckIn(patient) {
+  const entry = {
+    karte_number: patient.karte_number,
+    pet_name: patient.pet_name || '',
+    owner_name: (patient.owner_name || '').replace(/\u3000/g, ' '),
+    owner_id: patient.owner_id || '',
+    tel: patient.tel || '',
+    time: timeNow(),
+    status: 'waiting',
+    isNew: true,
+    _raw: patient
+  };
+
+  reception.unshift(entry);
+  saveReception();
+  renderTable();
+  updateStats();
+  playSound();
+  showConfirm('ok', patient);
+
+  // Auto-open ペトレルプラス if enabled
+  if (settings.autoOpen && patient.owner_id) {
+    setTimeout(() => {
+      window.open(`https://petorelu-clinic.jp/#/main/owners/${patient.owner_id}`, '_blank');
+    }, 600);
+  }
+
+  // Clear "new" highlight after 60 seconds
+  setTimeout(() => {
+    entry.isNew = false;
+    renderTable();
+    document.getElementById('newBadge').style.display = 'none';
+  }, 60000);
+}
+
+// ============================================
+// CONFIRMATION SCREEN
+// ============================================
+function showConfirm(type, patient) {
+  if (confirmTimer) { clearInterval(confirmTimer); confirmTimer = null; }
+
+  const overlay  = document.getElementById('confirmOverlay');
+  const icon     = document.getElementById('confirmIcon');
+  const titleEl  = document.getElementById('confirmTitle');
+  const petEl    = document.getElementById('confirmPet');
+  const ownerEl  = document.getElementById('confirmOwner');
+  const msgEl    = document.getElementById('confirmMsg');
+  const countEl  = document.getElementById('confirmCountdown');
+
+  // Reset
+  icon.style.background = '';
+  icon.textContent = '✓';
+
+  if (type === 'ok') {
+    const surname = (patient.owner_name || '').replace(/\u3000/g, ' ').split(/\s+/)[0];
+    icon.style.background = 'var(--success)';
+    icon.textContent = '✓';
+    titleEl.style.color = 'var(--success)';
+    titleEl.textContent = '受付しました';
+    petEl.textContent = patient.pet_name || '';
+    ownerEl.textContent = surname ? surname + ' 様' : '';
+    msgEl.innerHTML = 'スタッフが確認いたします<br>そのままお待ちください';
+  } else if (type === 'dup') {
+    icon.style.background = 'var(--warning)';
+    icon.textContent = '!';
+    titleEl.style.color = 'var(--warning)';
+    titleEl.textContent = '受付済みです';
+    petEl.textContent = patient.pet_name || '';
+    ownerEl.textContent = '';
+    msgEl.innerHTML = 'すでに受付が完了しています<br>スタッフにお声がけください';
+  } else if (type === 'notfound') {
+    icon.style.background = 'var(--danger)';
+    icon.textContent = '?';
+    titleEl.style.color = 'var(--danger)';
+    titleEl.textContent = '読み取れませんでした';
+    petEl.textContent = '';
+    ownerEl.textContent = '';
+    msgEl.innerHTML = 'QRコードを認識できませんでした<br>スタッフにお声がけください';
+  } else {
+    icon.style.background = 'var(--danger)';
+    icon.textContent = '!';
+    titleEl.style.color = 'var(--danger)';
+    titleEl.textContent = 'システム準備中';
+    petEl.textContent = '';
+    ownerEl.textContent = '';
+    msgEl.innerHTML = 'スタッフをお呼びください';
+  }
+
+  overlay.classList.add('show');
+
+  let sec = (type === 'ok') ? 5 : 4;
+  countEl.textContent = `${sec}秒後に戻ります`;
+
+  confirmTimer = setInterval(() => {
+    sec--;
+    if (sec <= 0) {
+      clearInterval(confirmTimer);
+      confirmTimer = null;
+      overlay.classList.remove('show');
+    } else {
+      countEl.textContent = `${sec}秒後に戻ります`;
+    }
+  }, 1000);
+}
+
+// ============================================
+// SOUND (Web Audio API)
+// ============================================
+function playSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [[880, 0, 0.15], [1100, 0.15, 0.15], [1320, 0.32, 0.25]].forEach(([freq, start, dur]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.28, ctx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + dur);
+    });
+  } catch (e) {}
+}
+
+// ============================================
+// TABLE
+// ============================================
+function renderTable() {
+  const tbody = document.getElementById('recBody');
+  const badge = document.getElementById('newBadge');
+
+  if (reception.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">受付がありません<br>患者がQRをスキャンすると表示されます</td></tr>';
+    badge.style.display = 'none';
+    return;
+  }
+
+  badge.style.display = reception.some(r => r.isNew) ? 'inline-block' : 'none';
+
+  const sLabel = { waiting: '待機中', called: '呼び出し済', done: '診察完了' };
+  const sCls   = { waiting: 'sp-w',   called: 'sp-c',       done: 'sp-d'     };
+
+  tbody.innerHTML = reception.map((r, i) => {
+    const haroBtn = settings.haropeUrl
+      ? `<button class="row-btn rb-har" onclick="openHarope(${i})">ハロぺH</button>`
+      : '';
+    const callBtn = r.status === 'waiting'
+      ? `<button class="row-btn rb-call" onclick="setStatus(${i},'called')">呼出</button>`
+      : '';
+    const doneBtn = r.status !== 'done'
+      ? `<button class="row-btn rb-done" onclick="setStatus(${i},'done')">完了</button>`
+      : '';
+
+    return `<tr${r.isNew ? ' class="is-new"' : ''}>
+      <td style="white-space:nowrap;font-size:13px;color:#8a9db0;">${r.time}</td>
+      <td style="font-size:11px;font-family:monospace;color:#8a9db0;">${r.karte_number}</td>
+      <td style="font-weight:600;">${r.pet_name}</td>
+      <td style="font-size:12px;color:#8a9db0;">${r.owner_name}</td>
+      <td><span class="status-pill ${sCls[r.status]}">${sLabel[r.status]}</span></td>
+      <td>
+        <div class="row-actions">
+          <button class="row-btn rb-pet" onclick="openPetorelu(${i})">ペトレル</button>
+          ${haroBtn}${callBtn}${doneBtn}
+          <button class="row-btn rb-del" onclick="removeRow(${i})">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openPetorelu(i) {
+  const r = reception[i];
+  if (!r || !r.owner_id) { toast('owner_idが見つかりません', ''); return; }
+  window.open(`https://petorelu-clinic.jp/#/main/owners/${r.owner_id}`, '_blank');
+}
+
+function openHarope(i) {
+  const url = settings.haropeUrl || 'https://hospital.halope.jp/acceptance';
+  window.open(url, '_blank');
+}
+
+function setStatus(i, status) {
+  if (!reception[i]) return;
+  reception[i].status = status;
+  saveReception();
+  renderTable();
+  updateStats();
+  const lbl = { called: '呼び出しました', done: '診察完了にしました' };
+  toast(`${reception[i].pet_name} を${lbl[status]}`, 'blue');
+}
+
+function removeRow(i) {
+  reception.splice(i, 1);
+  saveReception();
+  renderTable();
+  updateStats();
+}
+
+function updateStats() {
+  document.getElementById('sTotal').textContent   = reception.length;
+  document.getElementById('sWaiting').textContent = reception.filter(r => r.status === 'waiting').length;
+  document.getElementById('sCalled').textContent  = reception.filter(r => r.status === 'called').length;
+  document.getElementById('sDone').textContent    = reception.filter(r => r.status === 'done').length;
+}
+
+// ============================================
+// CSV EXPORT
+// ============================================
+function exportCSV() {
+  if (reception.length === 0) { toast('受付データがありません', ''); return; }
+  const hdr = ['受付時刻','カルテ番号','ペット名','飼い主名','ステータス','電話番号','owner_id'];
+  const lbl = { waiting: '待機中', called: '呼び出し済', done: '診察完了' };
+  const rows = reception.map(r => [
+    r.time, r.karte_number, r.pet_name, r.owner_name,
+    lbl[r.status], r.tel, r.owner_id
+  ]);
+  const csv = [hdr, ...rows].map(r => r.map(v => `"${(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `受付一覧_${todayStr().replace(/-/g,'')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSVを出力しました', 'green');
+}
+
+function clearAll() {
+  if (reception.length === 0) return;
+  if (!confirm(`本日の受付一覧（${reception.length}件）をクリアしますか？`)) return;
+  reception = [];
+  saveReception();
+  renderTable();
+  updateStats();
+  toast('クリアしました', '');
+}
+
+// ============================================
+// PIN
+// ============================================
+let pinBuf = '';
+
+function requestPin() {
+  pinBuf = '';
+  updateDots();
+  document.getElementById('pinError').textContent = '';
+  document.getElementById('pinOverlay').classList.add('show');
+}
+
+function pinKey(d) {
+  if (pinBuf.length >= 4) return;
+  pinBuf += d;
+  updateDots();
+  if (pinBuf.length === 4) {
+    if (pinBuf === settings.pin) {
+      document.getElementById('pinOverlay').classList.remove('show');
+      pinBuf = '';
+      updateDots();
+      openStaff();
+    } else {
+      document.getElementById('pinError').textContent = 'PINが違います';
+      setTimeout(() => {
+        pinBuf = '';
+        updateDots();
+        document.getElementById('pinError').textContent = '';
+      }, 900);
+    }
+  }
+}
+
+function pinDel()    { pinBuf = pinBuf.slice(0,-1); updateDots(); }
+function pinCancel() { pinBuf = ''; updateDots(); document.getElementById('pinOverlay').classList.remove('show'); }
+function updateDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('pd'+i).classList.toggle('filled', i < pinBuf.length);
+  }
+}
+
+// ============================================
+// STAFF PANEL
+// ============================================
+function openStaff() {
+  document.getElementById('staffPanel').classList.add('show');
+  renderTable();
+  updateStats();
+}
+
+function closeStaff() {
+  document.getElementById('staffPanel').classList.remove('show');
+}
+
+// ============================================
+// TOAST
+// ============================================
+let toastTimer = null;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = 'toast'; }, 3000);
+}
+
+// ============================================
+// DRAG & DROP for CSV
+// ============================================
+document.addEventListener('DOMContentLoaded', () => {
+  const drop = document.getElementById('csvDrop');
+
+  drop.addEventListener('dragover', e => {
+    e.preventDefault();
+    drop.classList.add('drag-over');
+  });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault();
+    drop.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try   { parseCSV(ev.target.result); }
+      catch (err) { showCsvMsg('err', 'エラー: ' + err.message); }
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+
+  // Auto-save settings on checkbox toggle
+  document.getElementById('autoOpen').addEventListener('change', saveSettings);
+});
+</script>
+</body>
+</html>
