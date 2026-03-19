@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>ä¸æ¡åç©çé¢ åä»ã·ã¹ãã </title>
+<title>上桂動物病院 受付システム</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -282,13 +282,13 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
 
 <!-- ===== KIOSK SCREEN ===== -->
 <div id="kioskScreen">
-  <div id="kioskTitle">ä¸æ¡åç©çé¢</div>
-  <div id="kioskSub">QRã³ã¼ãããããã¦ãã ãã</div>
+  <div id="kioskTitle">上桂動物病院</div>
+  <div id="kioskSub">QRコードをかざしてください</div>
   <div id="reader"></div>
-  <div id="scanStatus">ã«ã¡ã©èµ·åä¸­â¦</div>
-  <button id="manualBtn" onclick="showManual()">æåã§å¥åãã</button>
+  <div id="scanStatus">カメラ起動中…</div>
+  <button id="manualBtn" onclick="showManual()">手動で入力する</button>
 </div>
-<button id="staffBtn" onclick="requestPin('staff')">ã¹ã¿ãã</button>
+<button id="staffBtn" onclick="requestPin('staff')">スタッフ</button>
 
 <!-- ===== CONFIRM OVERLAY ===== -->
 <div id="confirmOverlay">
@@ -300,8 +300,8 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
     <div id="cStatus"></div>
     <div id="cAlready"></div>
     <div class="confirmBtns">
-      <button id="confirmCancel" onclick="hideConfirm()">ã­ã£ã³ã»ã«</button>
-      <button id="confirmOk" onclick="doCheckIn()">åä»ãã</button>
+      <button id="confirmCancel" onclick="hideConfirm()">キャンセル</button>
+      <button id="confirmOk" onclick="doCheckIn()">受付する</button>
     </div>
   </div>
 </div>
@@ -309,75 +309,75 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
 <!-- ===== MANUAL SCREEN ===== -->
 <div id="manualScreen">
   <div class="manualHeader">
-    <button class="backBtn" onclick="hideManual()">â æ»ã</button>
-    <h2>æååä»å¥å</h2>
+    <button class="backBtn" onclick="hideManual()">← 戻る</button>
+    <h2>手動受付入力</h2>
   </div>
   <div id="csvInfoBar" class="csvInfoBar" style="display:none"></div>
 
   <div class="formSection">
-    <h3>æéå¸¯</h3>
+    <h3>時間帯</h3>
     <div class="timeSlots" id="timeSlots"></div>
     <div class="formRow" style="margin-top:10px">
-      <label>ãã®ä»ã®æé</label>
+      <label>その他の時間</label>
       <input type="time" id="customTime" onchange="selectCustomTime(this.value)">
     </div>
   </div>
 
   <div class="formSection">
-    <h3>æ£èæ¤ç´¢</h3>
+    <h3>患者検索</h3>
     <div class="formRow">
-      <label>é£¼ãä¸»å / ãããå / ã«ã«ãçªå·</label>
-      <input type="text" id="patientSearch" placeholder="ä¾: å±±å´ãè¶å¤ªéã00001-01" oninput="onPatientSearch(this.value)">
+      <label>飼い主名 / ペット名 / カルテ番号</label>
+      <input type="text" id="patientSearch" placeholder="例: 山崎、茶太郎、00001-01" oninput="onPatientSearch(this.value)">
       <div id="searchResults" class="searchHints" style="display:none"></div>
     </div>
     <div class="formRow">
-      <label>é£¼ãä¸»å</label>
-      <input type="text" id="manualOwnerName" placeholder="å±±å´ãäºçµ">
+      <label>飼い主名</label>
+      <input type="text" id="manualOwnerName" placeholder="山崎　了経">
     </div>
     <div class="formRow">
-      <label>ãããå</label>
-      <input type="text" id="manualPetName" placeholder="è¶å¤ªé">
+      <label>ペット名</label>
+      <input type="text" id="manualPetName" placeholder="茶太郎">
     </div>
     <div class="formRow">
-      <label>ã«ã«ãçªå· (ä»»æ)</label>
+      <label>カルテ番号 (任意)</label>
       <input type="text" id="manualKarte" placeholder="00001-01">
     </div>
   </div>
 
   <div class="formSection">
-    <h3>ä¿éºã»ã«ã¼ã</h3>
+    <h3>保険・カード</h3>
     <div class="formRow">
-      <label>ãããä¿éº</label>
+      <label>ペット保険</label>
       <div class="radioGroup" id="insuranceGroup">
-        <div class="radioBtn selected" data-val="ãªã" onclick="selectRadio('insurance', this)">ãªã</div>
-        <div class="radioBtn" data-val="ã¢ãã³ã " onclick="selectRadio('insurance', this)">ã¢ãã³ã </div>
-        <div class="radioBtn" data-val="ã¢ã¤ããã" onclick="selectRadio('insurance', this)">ã¢ã¤ããã</div>
-        <div class="radioBtn" data-val="ãã®ä»" onclick="selectRadio('insurance', this)">ãã®ä»</div>
+        <div class="radioBtn selected" data-val="なし" onclick="selectRadio('insurance', this)">なし</div>
+        <div class="radioBtn" data-val="アニコム" onclick="selectRadio('insurance', this)">アニコム</div>
+        <div class="radioBtn" data-val="アイペット" onclick="selectRadio('insurance', this)">アイペット</div>
+        <div class="radioBtn" data-val="その他" onclick="selectRadio('insurance', this)">その他</div>
       </div>
     </div>
     <div class="formRow">
-      <label>è¨ºå¯å¸</label>
+      <label>診察券</label>
       <div class="radioGroup" id="cardGroup">
-        <div class="radioBtn selected" data-val="æå" onclick="selectRadio('card', this)">æå</div>
-        <div class="radioBtn" data-val="ãªã" onclick="selectRadio('card', this)">ãªã</div>
-        <div class="radioBtn" data-val="ç´å¤±" onclick="selectRadio('card', this)">ç´å¤±</div>
+        <div class="radioBtn selected" data-val="持参" onclick="selectRadio('card', this)">持参</div>
+        <div class="radioBtn" data-val="なし" onclick="selectRadio('card', this)">なし</div>
+        <div class="radioBtn" data-val="紛失" onclick="selectRadio('card', this)">紛失</div>
       </div>
     </div>
     <div class="formRow">
-      <label>è¨ºå¯å¸çªå· (ä»»æ)</label>
+      <label>診察券番号 (任意)</label>
       <input type="text" id="manualCardNumber" placeholder="00001">
     </div>
   </div>
 
   <div class="formSection">
-    <button class="submitManualBtn" onclick="submitManual()">åä»ç»é²ãã</button>
+    <button class="submitManualBtn" onclick="submitManual()">受付登録する</button>
   </div>
 </div>
 
 <!-- ===== PIN OVERLAY ===== -->
 <div id="pinOverlay">
   <div class="pinCard">
-    <h3>ã¹ã¿ããPIN</h3>
+    <h3>スタッフPIN</h3>
     <div class="pinDots" id="pinDots">
       <div class="pinDot" id="dot0"></div>
       <div class="pinDot" id="dot1"></div>
@@ -394,57 +394,57 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
       <button class="pinKey" onclick="pinInput('7')">7</button>
       <button class="pinKey" onclick="pinInput('8')">8</button>
       <button class="pinKey" onclick="pinInput('9')">9</button>
-      <button class="pinKey" onclick="openSettingsFromPin()">è¨­å®</button>
+      <button class="pinKey" onclick="openSettingsFromPin()">設定</button>
       <button class="pinKey" onclick="pinInput('0')">0</button>
-      <button class="pinKey del" onclick="pinDel()">â«</button>
+      <button class="pinKey del" onclick="pinDel()">⌫</button>
     </div>
     <div class="pinError" id="pinError"></div>
-    <button class="pinCancelBtn" onclick="closePinOverlay()">ã­ã£ã³ã»ã«</button>
+    <button class="pinCancelBtn" onclick="closePinOverlay()">キャンセル</button>
   </div>
 </div>
 
 <!-- ===== STAFF PANEL ===== -->
 <div id="staffPanel">
   <div class="staffHeader">
-    <h2>åä»ä¸è¦§</h2>
+    <h2>受付一覧</h2>
     <div class="staffHeaderRight">
-      <span class="syncIndicator" id="syncMsg">åæä¸­â¦</span>
-      <button class="staffCloseBtn" onclick="closeStaff()">éãã</button>
+      <span class="syncIndicator" id="syncMsg">同期中…</span>
+      <button class="staffCloseBtn" onclick="closeStaff()">閉じる</button>
     </div>
   </div>
   <div class="statsBar">
-    <div class="statItem"><div class="statNum" id="statTotal">0</div><div class="statLabel">åè¨</div></div>
-    <div class="statItem waiting"><div class="statNum" id="statWaiting">0</div><div class="statLabel">å¾æ©ä¸­</div></div>
-    <div class="statItem called"><div class="statNum" id="statCalled">0</div><div class="statLabel">å¼åºæ¸</div></div>
-    <div class="statItem done"><div class="statNum" id="statDone">0</div><div class="statLabel">å®äº</div></div>
+    <div class="statItem"><div class="statNum" id="statTotal">0</div><div class="statLabel">合計</div></div>
+    <div class="statItem waiting"><div class="statNum" id="statWaiting">0</div><div class="statLabel">待機中</div></div>
+    <div class="statItem called"><div class="statNum" id="statCalled">0</div><div class="statLabel">呼出済</div></div>
+    <div class="statItem done"><div class="statNum" id="statDone">0</div><div class="statLabel">完了</div></div>
   </div>
   <div class="staffControls">
     <div class="staffSearch">
-      <input type="text" id="staffSearch" placeholder="ååã»ã«ã«ãçªå·ã§æ¤ç´¢â¦" oninput="renderStaff()">
+      <input type="text" id="staffSearch" placeholder="名前・カルテ番号で検索…" oninput="renderStaff()">
     </div>
     <div class="filterBtns">
-      <button class="filterBtn active" onclick="setFilter('all', this)">ãã¹ã¦</button>
-      <button class="filterBtn" onclick="setFilter('waiting', this)">å¾æ©ä¸­</button>
-      <button class="filterBtn" onclick="setFilter('called', this)">å¼åºæ¸</button>
-      <button class="filterBtn" onclick="setFilter('done', this)">å®äº</button>
+      <button class="filterBtn active" onclick="setFilter('all', this)">すべて</button>
+      <button class="filterBtn" onclick="setFilter('waiting', this)">待機中</button>
+      <button class="filterBtn" onclick="setFilter('called', this)">呼出済</button>
+      <button class="filterBtn" onclick="setFilter('done', this)">完了</button>
     </div>
   </div>
   <div class="receptionList" id="receptionList">
-    <div class="loadingRow">èª­ã¿è¾¼ã¿ä¸­â¦</div>
+    <div class="loadingRow">読み込み中…</div>
   </div>
   <div class="staffActionBar">
-    <button class="addManualBtn" onclick="staffToManual()">ï¼ æååä»</button>
-    <button class="exportBtn" onclick="exportCSV()">CSVåºå</button>
-    <button class="clearBtn" onclick="clearAll()">å¨æ¶å»</button>
+    <button class="addManualBtn" onclick="staffToManual()">＋ 手動受付</button>
+    <button class="exportBtn" onclick="exportCSV()">CSV出力</button>
+    <button class="clearBtn" onclick="clearAll()">全消去</button>
   </div>
 </div>
 
 <!-- ===== SETTINGS PANEL ===== -->
 <div id="settingsPanel">
   <div class="settingsCard">
-    <h3>è¨­å®</h3>
+    <h3>設定</h3>
     <div class="settingRow">
-      <label>ã¹ã¿ããPIN (4æ¡)</label>
+      <label>スタッフPIN (4桁)</label>
       <input type="number" id="setPIN" placeholder="1234" maxlength="4">
     </div>
     <div class="settingRow">
@@ -452,33 +452,33 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
       <input type="url" id="setGasUrl" placeholder="https://script.google.com/...">
     </div>
     <div class="settingRow">
-      <label>ãã­ãºH URL</label>
+      <label>ハロぺH URL</label>
       <input type="url" id="setHaropeUrl" placeholder="https://hospital.halope.jp/acceptance">
     </div>
     <div class="settingRow">
-      <label>CSVãåèª­ã¿è¾¼ã¿</label>
+      <label>CSVを再読み込み</label>
       <input type="file" id="settingsCsvInput" accept=".csv" onchange="handleCsvFile(this.files[0])" style="color:#aaa;padding:8px 0;border:none;background:transparent">
     </div>
-    <button class="settingSaveBtn" onclick="saveSettings()">ä¿å­</button>
-    <button class="settingsCancelBtn" onclick="closeSettings()">ã­ã£ã³ã»ã«</button>
+    <button class="settingSaveBtn" onclick="saveSettings()">保存</button>
+    <button class="settingsCancelBtn" onclick="closeSettings()">キャンセル</button>
   </div>
 </div>
 
 <!-- ===== CSV LOADER ===== -->
 <div id="csvLoader">
   <div class="csvLoaderCard">
-    <h3>æ£èãã¼ã¿CSVèª­ã¿è¾¼ã¿</h3>
-    <p>ããã¬ã«ãã©ã¹ããåºåããCSVãã¡ã¤ã«ããã­ãããã¦ãã ããã<br>å¾ã§èª­ã¿è¾¼ããã¨ãã§ãã¾ãã</p>
+    <h3>患者データCSV読み込み</h3>
+    <p>ペトレルプラスから出力したCSVファイルをドロップしてください。<br>後で読み込むこともできます。</p>
     <div class="dropZone" id="dropZone" onclick="document.getElementById('csvFileInput').click()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
       </svg>
-      <div>ã¿ããã¾ãã¯ãã©ãã°&ãã­ãã</div>
-      <div style="font-size:12px;margin-top:4px;color:#666">BOMä»ãUTF-8å¯¾å¿</div>
+      <div>タップまたはドラッグ&ドロップ</div>
+      <div style="font-size:12px;margin-top:4px;color:#666">BOM付きUTF-8対応</div>
     </div>
     <input type="file" class="fileInputHidden" id="csvFileInput" accept=".csv" onchange="handleCsvFile(this.files[0])">
     <div class="csvStatusMsg" id="csvStatusMsg"></div>
-    <button class="csvSkipBtn" onclick="skipCsv()">ã¹ã­ããï¼å¾ã§èª­ã¿è¾¼ãï¼</button>
+    <button class="csvSkipBtn" onclick="skipCsv()">スキップ（後で読み込む）</button>
   </div>
 </div>
 
@@ -505,8 +505,8 @@ let pinBuffer = '';
 let pinTarget = 'staff';
 let selectedTimeVal = '';
 let selectedTimeDisplay = '';
-let insuranceVal = 'ãªã';
-let cardVal = 'æå';
+let insuranceVal = 'なし';
+let cardVal = '持参';
 let selectedPatient = null;
 let staffOpen = false;
 let returnToStaff = false;
@@ -531,7 +531,7 @@ function saveSettings() {
   if (haropeVal) settings.haropeUrl = haropeVal;
   localStorage.setItem('kiosk_settings', JSON.stringify(settings));
   document.getElementById('settingsPanel').classList.remove('active');
-  toast('è¨­å®ãä¿å­ãã¾ãã', 'success');
+  toast('設定を保存しました', 'success');
 }
 
 function closeSettings() {
@@ -599,7 +599,7 @@ function handleCsvFile(file) {
       csvData = rows.filter(r => r.karte_number);
       csvLoaded = true;
       localStorage.setItem('csv_cache', e.target.result);
-      const msg = `â ${csvData.length}ä»¶èª­ã¿è¾¼ã¿å®äº`;
+      const msg = `✓ ${csvData.length}件読み込み完了`;
       document.getElementById('csvStatusMsg').textContent = msg;
       toast(msg, 'success');
       setTimeout(() => {
@@ -608,7 +608,7 @@ function handleCsvFile(file) {
         startCamera();
       }, 700);
     } catch(err) {
-      document.getElementById('csvStatusMsg').textContent = 'ã¨ã©ã¼: ' + err.message;
+      document.getElementById('csvStatusMsg').textContent = 'エラー: ' + err.message;
     }
   };
   reader.readAsText(file, 'UTF-8');
@@ -624,7 +624,7 @@ function updateCsvInfoBar() {
   const bar = document.getElementById('csvInfoBar');
   if (csvLoaded && csvData.length) {
     bar.style.display = 'block';
-    bar.textContent = `æ£èãã¼ã¿: ${csvData.length}ä»¶èª­ã¿è¾¼ã¿æ¸ã¿`;
+    bar.textContent = `患者データ: ${csvData.length}件読み込み済み`;
   } else {
     bar.style.display = 'none';
   }
@@ -652,7 +652,7 @@ function startCamera() {
   html5QrCode = new Html5Qrcode('reader');
   Html5Qrcode.getCameras().then(cameras => {
     if (!cameras || cameras.length === 0) {
-      document.getElementById('scanStatus').textContent = 'ã«ã¡ã©ãè¦ã¤ããã¾ãã';
+      document.getElementById('scanStatus').textContent = 'カメラが見つかりません';
       return;
     }
     const cam = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[cameras.length - 1];
@@ -662,12 +662,12 @@ function startCamera() {
       onQRSuccess,
       () => {}
     ).then(() => {
-      document.getElementById('scanStatus').textContent = 'QRã³ã¼ãããããã¦ãã ãã';
+      document.getElementById('scanStatus').textContent = 'QRコードをかざしてください';
     }).catch(err => {
-      document.getElementById('scanStatus').textContent = 'ã«ã¡ã©èµ·åå¤±æ: ' + err;
+      document.getElementById('scanStatus').textContent = 'カメラ起動失敗: ' + err;
     });
   }).catch(err => {
-    document.getElementById('scanStatus').textContent = 'ã«ã¡ã©ã¢ã¯ã»ã¹æå¦: ' + err;
+    document.getElementById('scanStatus').textContent = 'カメラアクセス拒否: ' + err;
   });
 }
 
@@ -678,7 +678,7 @@ function onQRSuccess(text) {
   const karteNumber = text.trim();
   const patient = lookupKarte(karteNumber);
   if (csvLoaded && !patient) {
-    toast('æ£èãã¼ã¿ãè¦ã¤ããã¾ãã: ' + karteNumber, 'error');
+    toast('患者データが見つかりません: ' + karteNumber, 'error');
     return;
   }
   pendingQR = { karte_number: karteNumber, patient };
@@ -689,15 +689,15 @@ function onQRSuccess(text) {
 function showConfirm(karteNumber, patient) {
   const already = reception.some(r => r.karte_number === karteNumber && r.status !== 'done');
   document.getElementById('cPetName').textContent = patient ? patient.pet_name : karteNumber;
-  document.getElementById('cOwnerName').textContent = patient ? (patient.owner_name + ' æ§') : '';
-  document.getElementById('cKarte').textContent = 'ã«ã«ãçªå·: ' + karteNumber;
+  document.getElementById('cOwnerName').textContent = patient ? (patient.owner_name + ' 様') : '';
+  document.getElementById('cKarte').textContent = 'カルテ番号: ' + karteNumber;
   document.getElementById('cTel').textContent = patient ? ('TEL: ' + patient.tel) : '';
   const hasStatus = patient && (patient.pet_status || patient.owner_status);
   document.getElementById('cStatus').innerHTML = hasStatus
     ? `<span class="statusBadge">${esc(patient.pet_status || patient.owner_status)}</span>` : '';
   document.getElementById('cAlready').innerHTML = already
-    ? '<div class="alreadyMsg">â  ãã§ã«åä»æ¸ã¿ã§ã</div>' : '';
-  document.getElementById('confirmOk').textContent = already ? 'ååº¦åä»ãã' : 'åä»ãã';
+    ? '<div class="alreadyMsg">⚠ すでに受付済みです</div>' : '';
+  document.getElementById('confirmOk').textContent = already ? '再度受付する' : '受付する';
   document.getElementById('confirmOverlay').classList.add('active');
 }
 
@@ -731,9 +731,9 @@ function doCheckIn() {
       localStatusOverrides[id] = { status: 'waiting', ts: Date.now() };
     }
     reception.push(entry);
-    toast(entry.petName + ' ããã®åä»ãå®äºãã¾ãã', 'success');
+    toast(entry.petName + ' さんの受付が完了しました', 'success');
   }).catch(err => {
-    toast('åä»ç»é²ã«å¤±æãã¾ãã', 'error');
+    toast('受付登録に失敗しました', 'error');
     console.error(err);
   });
 }
@@ -814,14 +814,14 @@ function showManual() {
 
 function resetManualForm() {
   selectedTimeVal = ''; selectedTimeDisplay = '';
-  insuranceVal = 'ãªã'; cardVal = 'æå';
+  insuranceVal = 'なし'; cardVal = '持参';
   selectedPatient = null;
   ['manualOwnerName','manualPetName','manualKarte','manualCardNumber','patientSearch'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.querySelectorAll('.timeSlot').forEach(b => b.classList.remove('selected'));
-  document.querySelectorAll('#insuranceGroup .radioBtn').forEach(b => b.classList.toggle('selected', b.dataset.val === 'ãªã'));
-  document.querySelectorAll('#cardGroup .radioBtn').forEach(b => b.classList.toggle('selected', b.dataset.val === 'æå'));
+  document.querySelectorAll('#insuranceGroup .radioBtn').forEach(b => b.classList.toggle('selected', b.dataset.val === 'なし'));
+  document.querySelectorAll('#cardGroup .radioBtn').forEach(b => b.classList.toggle('selected', b.dataset.val === '持参'));
   document.getElementById('customTime').value = '';
   document.getElementById('searchResults').style.display = 'none';
 }
@@ -840,7 +840,7 @@ function staffToManual() {
 function submitManual() {
   const ownerName = document.getElementById('manualOwnerName').value.trim();
   const petName = document.getElementById('manualPetName').value.trim();
-  if (!ownerName && !petName) { toast('é£¼ãä¸»åã¾ãã¯ãããåãå¥åãã¦ãã ãã', 'error'); return; }
+  if (!ownerName && !petName) { toast('飼い主名またはペット名を入力してください', 'error'); return; }
   const karteNumber = document.getElementById('manualKarte').value.trim();
   const cardNumber = document.getElementById('manualCardNumber').value.trim();
   const now = new Date();
@@ -867,10 +867,10 @@ function submitManual() {
       localStatusOverrides[id] = { status: 'waiting', ts: Date.now() };
     }
     reception.push(entry);
-    toast((entry.petName || entry.ownerName) + ' ãããåä»ãã¾ãã', 'success');
+    toast((entry.petName || entry.ownerName) + ' さんを受付しました', 'success');
     hideManual();
   }).catch(err => {
-    toast('ç»é²ã«å¤±æãã¾ãã', 'error');
+    toast('登録に失敗しました', 'error');
     console.error(err);
   });
 }
@@ -913,7 +913,7 @@ function checkPin() {
     if (pinTarget === 'staff') openStaff();
     else openSettingsPanel();
   } else {
-    document.getElementById('pinError').textContent = 'PINãéãã¾ã';
+    document.getElementById('pinError').textContent = 'PINが違います';
     pinBuffer = '';
     updatePinDots();
     setTimeout(() => { document.getElementById('pinError').textContent = ''; }, 1500);
@@ -973,39 +973,39 @@ function renderStaff() {
 
   const list = document.getElementById('receptionList');
   if (!filtered.length) {
-    list.innerHTML = '<div class="noDataRow">è©²å½ããåä»ãããã¾ãã</div>';
+    list.innerHTML = '<div class="noDataRow">該当する受付がありません</div>';
     return;
   }
 
   list.innerHTML = filtered.map(r => {
     const origIdx = reception.indexOf(r);
-    const statusLabel = { waiting: 'å¾æ©ä¸­', called: 'å¼åºæ¸', done: 'å®äº' }[r.status] || r.status;
+    const statusLabel = { waiting: '待機中', called: '呼出済', done: '完了' }[r.status] || r.status;
     const infoArr = [];
-    if (r.receptionTime) infoArr.push('åä» ' + r.receptionTime);
-    if (r.selectedTimeDisplay) infoArr.push('äºå® ' + r.selectedTimeDisplay);
+    if (r.receptionTime) infoArr.push('受付 ' + r.receptionTime);
+    if (r.selectedTimeDisplay) infoArr.push('予定 ' + r.selectedTimeDisplay);
     if (r.tel) infoArr.push(r.tel);
-    if (r.insuranceOption && r.insuranceOption !== 'ãªã') infoArr.push('ä¿éº: ' + r.insuranceOption);
-    if (r.cardOption) infoArr.push('è¨ºå¯å¸: ' + r.cardOption);
-    const sourceBadge = r.source === 'qr' ? 'ð±QR' : 'âæå';
+    if (r.insuranceOption && r.insuranceOption !== 'なし') infoArr.push('保険: ' + r.insuranceOption);
+    if (r.cardOption) infoArr.push('診察券: ' + r.cardOption);
+    const sourceBadge = r.source === 'qr' ? '📱QR' : '✍手動';
     const statusBtns = r.status === 'waiting'
-      ? `<button class="cardBtn call" onclick="updateStatus(${origIdx},'called')">å¼åº</button>`
+      ? `<button class="cardBtn call" onclick="updateStatus(${origIdx},'called')">呼出</button>`
       : r.status === 'called'
-      ? `<button class="cardBtn done" onclick="updateStatus(${origIdx},'done')">å®äº</button>`
-      : `<button class="cardBtn waiting-btn" onclick="updateStatus(${origIdx},'waiting')">æ»ã</button>`;
+      ? `<button class="cardBtn done" onclick="updateStatus(${origIdx},'done')">完了</button>`
+      : `<button class="cardBtn waiting-btn" onclick="updateStatus(${origIdx},'waiting')">戻す</button>`;
     return `<div class="receptionCard ${r.status}">
       <div class="cardTop">
         <div>
           <div class="cardPetName">${esc(r.petName)} ${sourceBadge}</div>
-          <div class="cardKarte">${esc(r.ownerName)}${r.karte_number ? ' ã» ' + r.karte_number : ''}</div>
+          <div class="cardKarte">${esc(r.ownerName)}${r.karte_number ? ' ・ ' + r.karte_number : ''}</div>
         </div>
         <span class="statusBadge2 ${r.status}">${statusLabel}</span>
       </div>
       <div class="cardInfo">${infoArr.map(esc).join(' | ')}</div>
       <div class="cardBtns">
-        ${r.owner_id ? `<button class="cardBtn petorelu" onclick="openPetorelu(${origIdx})">ããã¬ã«</button>` : ''}
-        <button class="cardBtn harope" onclick="openHarope()">ãã­ãºH</button>
+        ${r.owner_id ? `<button class="cardBtn petorelu" onclick="openPetorelu(${origIdx})">ペトレル</button>` : ''}
+        <button class="cardBtn harope" onclick="openHarope()">ハロぺH</button>
         ${statusBtns}
-        <button class="cardBtn del" onclick="deleteEntry(${origIdx})">åé¤</button>
+        <button class="cardBtn del" onclick="deleteEntry(${origIdx})">削除</button>
       </div>
     </div>`;
   }).join('');
@@ -1013,7 +1013,7 @@ function renderStaff() {
 
 function openPetorelu(i) {
   const r = reception[i];
-  if (!r || !r.owner_id) { toast('owner_idãè¦ã¤ããã¾ãã', 'error'); return; }
+  if (!r || !r.owner_id) { toast('owner_idが見つかりません', 'error'); return; }
   window.open('https://petorelu-clinic.jp/#/main/owners/' + r.owner_id, '_blank');
 }
 
@@ -1034,7 +1034,7 @@ function updateStatus(i, newStatus) {
       r.status = old;
       if (r.id) delete localStatusOverrides[r.id];
       renderStaff();
-      toast('ã¹ãã¼ã¿ã¹æ¥¨æ°ã«å¤±æãã¾ãã', 'error');
+      toast('ステータス更新に失敗しました', 'error');
     });
   }
 }
@@ -1042,7 +1042,7 @@ function updateStatus(i, newStatus) {
 function deleteEntry(i) {
   const r = reception[i];
   if (!r) return;
-  if (!confirm('ã' + (r.petName || r.ownerName) + 'ãã®åä»ãåé¤ãã¾ããï¼')) return;
+  if (!confirm('「' + (r.petName || r.ownerName) + '」の受付を削除しますか？')) return;
   const id = r.id;
   reception.splice(i, 1);
   renderStaff();
@@ -1050,7 +1050,7 @@ function deleteEntry(i) {
 }
 
 function clearAll() {
-  if (!confirm('æ¬æ¥ã®åä»ä¸è¦§ããã¹ã¦åé¤ãã¾ããï¼\nãã®æä½ã¯åãæ¶ãã¾ããã')) return;
+  if (!confirm('本日の受付一覧をすべて削除しますか？\nこの操作は取り消せません。')) return;
   reception = [];
   localStatusOverrides = {};
   renderStaff();
@@ -1058,12 +1058,12 @@ function clearAll() {
 }
 
 function exportCSV() {
-  const headers = ['åä»æå»','ãããå','é£¼ãä¸»å','ã«ã«ãçªå·','æéå¸¯','ä¿éº','è¨ºå¯å¸','ã¹ãã¼ã¿ã¹','æ¥é¢æ¹æ³'];
+  const headers = ['受付時刻','ペット名','飼い主名','カルテ番号','時間帯','保険','診察券','ステータス','来院方法'];
   const rows = reception.map(r => [
     r.receptionTime, r.petName, r.ownerName, r.karte_number,
     r.selectedTimeDisplay, r.insuranceOption, r.cardOption,
-    { waiting:'å¾æ©ä¸­', called:'å¼åºæ¸', done:'å®äº' }[r.status] || r.status,
-    r.source === 'qr' ? 'QRèªå' : 'æåå¥å'
+    { waiting:'待機中', called:'呼出済', done:'完了' }[r.status] || r.status,
+    r.source === 'qr' ? 'QR自動' : '手動入力'
   ]);
   const csv = [headers, ...rows].map(r =>
     r.map(c => '"' + String(c || '').replace(/"/g, '""') + '"').join(',')
@@ -1072,7 +1072,7 @@ function exportCSV() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'åä»ä¸è¦§_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.download = '受付一覧_' + new Date().toISOString().slice(0,10) + '.csv';
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -1090,7 +1090,7 @@ function gasAdd(entry) {
 function gasGetAll() {
   const url = settings.gasUrl || DEFAULT_GAS_URL;
   const syncMsg = document.getElementById('syncMsg');
-  if (syncMsg) syncMsg.textContent = 'åæä¸­â¦';
+  if (syncMsg) syncMsg.textContent = '同期中…';
   return fetch(url + '?action=getAll')
     .then(r => r.json())
     .then(j => {
@@ -1105,12 +1105,12 @@ function gasGetAll() {
         if ((now - localStatusOverrides[id].ts) >= 60000) delete localStatusOverrides[id];
       }
       const t = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
-      if (syncMsg) syncMsg.textContent = 'åææ¸ ' + t;
+      if (syncMsg) syncMsg.textContent = '同期済 ' + t;
       return reception;
     })
     .catch(err => {
       console.error('gasGetAll error:', err);
-      if (syncMsg) syncMsg.textContent = 'åæå¤±æ';
+      if (syncMsg) syncMsg.textContent = '同期失敗';
       return reception;
     });
 }
