@@ -6,7 +6,7 @@
 <title>上桂動物病院 受付システム</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #111; color: #fff; height: 100vh; overflow: hidden; }
 
 /* ===== KIOSK SCREEN ===== */
@@ -18,7 +18,11 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
 #kioskSub { font-size: 14px; color: #aaa; margin-bottom: 24px; }
 #reader { width: 300px; height: 300px; border-radius: 16px; overflow: hidden; background: #222; }
 #reader video { object-fit: cover; }
-#scanStatus { margin-top: 16px; font-size: 14px; color: #888; min-height: 20px; }
+#scanStatus { margin-top: 16px; font-size: 14px; color: #888; min-height: 20px; text-align: center; }
+#cameraRetryBtn {
+  display: none; margin-top: 12px; padding: 12px 28px; border: 1px solid #3b82f6; border-radius: 30px;
+  background: transparent; color: #3b82f6; font-size: 15px; cursor: pointer;
+}
 #manualBtn {
   margin-top: 20px; padding: 12px 28px; border: 1px solid #555; border-radius: 30px;
   background: transparent; color: #ccc; font-size: 15px; cursor: pointer;
@@ -26,9 +30,23 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
 #manualBtn:active { background: #333; }
 #staffBtn {
   position: fixed; bottom: 16px; right: 16px;
-  padding: 8px 16px; border: 1px solid #444; border-radius: 20px;
-  background: #1a1a1a; color: #888; font-size: 13px; cursor: pointer;
+  padding: 8px 16px; border: 1px solid #333; border-radius: 20px;
+  background: #1a1a1a; color: #555; font-size: 12px; cursor: pointer;
+  opacity: 0.4;
 }
+
+/* ===== SUCCESS OVERLAY ===== */
+#successOverlay {
+  display: none; position: fixed; inset: 0; background: rgba(5,150,105,0.97);
+  align-items: center; justify-content: center; z-index: 400;
+  flex-direction: column; padding: 24px;
+}
+#successOverlay.active { display: flex; }
+.successIcon { font-size: 80px; margin-bottom: 16px; animation: popIn 0.4s ease-out; }
+.successTitle { font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+.successSub { font-size: 18px; color: rgba(255,255,255,0.85); margin-bottom: 6px; }
+.successMsg { font-size: 15px; color: rgba(255,255,255,0.7); margin-top: 16px; }
+@keyframes popIn { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
 /* ===== CONFIRM OVERLAY ===== */
 #confirmOverlay {
@@ -81,6 +99,8 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
   font-size: 14px; color: #374151; cursor: pointer; background: #fff;
 }
 .timeSlot.selected { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; font-weight: 600; }
+.timeSlot.past { opacity: 0.4; }
+.timeSlot.current { border-color: #f59e0b; background: #fffbeb; }
 .radioGroup { display: flex; gap: 10px; flex-wrap: wrap; }
 .radioBtn {
   padding: 8px 16px; border: 1.5px solid #d1d5db; border-radius: 20px;
@@ -93,6 +113,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
   cursor: pointer; margin-top: 6px;
 }
 .submitManualBtn:active { background: #1e40af; }
+.submitManualBtn:disabled { background: #93c5fd; cursor: not-allowed; }
 .csvInfoBar {
   background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
   padding: 10px 14px; font-size: 13px; color: #1d4ed8; margin-bottom: 14px;
@@ -116,7 +137,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
 }
 .pinCard h3 { color: #fff; font-size: 18px; margin-bottom: 20px; }
 .pinDots { display: flex; justify-content: center; gap: 14px; margin-bottom: 20px; }
-.pinDot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #555; background: transparent; }
+.pinDot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #555; background: transparent; transition: all 0.15s; }
 .pinDot.filled { background: #3b82f6; border-color: #3b82f6; }
 .pinKeypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .pinKey {
@@ -276,19 +297,47 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
 #toast.show { opacity: 1; }
 #toast.error { background: rgba(185,28,28,0.95); }
 #toast.success { background: rgba(5,150,105,0.95); }
+
+/* ===== HTTPS WARNING ===== */
+#httpsWarning {
+  display: none; position: fixed; inset: 0; background: #111;
+  align-items: center; justify-content: center; z-index: 9999;
+  flex-direction: column; padding: 32px; text-align: center;
+}
+#httpsWarning.active { display: flex; }
+#httpsWarning h2 { font-size: 20px; color: #f87171; margin-bottom: 12px; }
+#httpsWarning p { font-size: 14px; color: #aaa; line-height: 1.6; max-width: 360px; }
+#httpsWarning .warningBtn { margin-top: 20px; padding: 12px 24px; background: #1d4ed8; color: #fff; border: none; border-radius: 12px; font-size: 15px; cursor: pointer; }
 </style>
 </head>
 <body>
+
+<!-- ===== HTTPS WARNING ===== -->
+<div id="httpsWarning">
+  <h2>HTTPS接続が必要です</h2>
+  <p>カメラを使用するにはHTTPS接続が必要です。<br>ローカルファイルとして開いている場合は、Webサーバー経由でアクセスしてください。</p>
+  <p id="httpsDetail" style="margin-top:10px; font-size:12px; color:#666"></p>
+  <button class="warningBtn" onclick="dismissHttpsWarning()">手動入力モードで続ける</button>
+</div>
 
 <!-- ===== KIOSK SCREEN ===== -->
 <div id="kioskScreen">
   <div id="kioskTitle">上桂動物病院</div>
   <div id="kioskSub">QRコードをかざしてください</div>
   <div id="reader"></div>
-  <div id="scanStatus">カメラ起動中…</div>
+  <div id="scanStatus">カメラ起動中...</div>
+  <button id="cameraRetryBtn" onclick="retryCamera()">カメラを再起動</button>
   <button id="manualBtn" onclick="showManual()">手動で入力する</button>
 </div>
 <button id="staffBtn" onclick="requestPin('staff')">スタッフ</button>
+
+<!-- ===== SUCCESS OVERLAY ===== -->
+<div id="successOverlay">
+  <div class="successIcon">&#10003;</div>
+  <div class="successTitle" id="successName"></div>
+  <div class="successSub">受付が完了しました</div>
+  <div class="successMsg">そのままお待ちください</div>
+</div>
 
 <!-- ===== CONFIRM OVERLAY ===== -->
 <div id="confirmOverlay">
@@ -309,7 +358,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
 <!-- ===== MANUAL SCREEN ===== -->
 <div id="manualScreen">
   <div class="manualHeader">
-    <button class="backBtn" onclick="hideManual()">← 戻る</button>
+    <button class="backBtn" onclick="hideManual()">&#8592; 戻る</button>
     <h2>手動受付入力</h2>
   </div>
   <div id="csvInfoBar" class="csvInfoBar" style="display:none"></div>
@@ -370,7 +419,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
   </div>
 
   <div class="formSection">
-    <button class="submitManualBtn" onclick="submitManual()">受付登録する</button>
+    <button class="submitManualBtn" id="submitManualBtn" onclick="submitManual()">受付登録する</button>
   </div>
 </div>
 
@@ -396,7 +445,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
       <button class="pinKey" onclick="pinInput('9')">9</button>
       <button class="pinKey" onclick="openSettingsFromPin()">設定</button>
       <button class="pinKey" onclick="pinInput('0')">0</button>
-      <button class="pinKey del" onclick="pinDel()">⌫</button>
+      <button class="pinKey del" onclick="pinDel()">&#9003;</button>
     </div>
     <div class="pinError" id="pinError"></div>
     <button class="pinCancelBtn" onclick="closePinOverlay()">キャンセル</button>
@@ -408,7 +457,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
   <div class="staffHeader">
     <h2>受付一覧</h2>
     <div class="staffHeaderRight">
-      <span class="syncIndicator" id="syncMsg">同期中…</span>
+      <span class="syncIndicator" id="syncMsg">同期中...</span>
       <button class="staffCloseBtn" onclick="closeStaff()">閉じる</button>
     </div>
   </div>
@@ -420,7 +469,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
   </div>
   <div class="staffControls">
     <div class="staffSearch">
-      <input type="text" id="staffSearch" placeholder="名前・カルテ番号で検索…" oninput="renderStaff()">
+      <input type="text" id="staffSearch" placeholder="名前・カルテ番号で検索..." oninput="renderStaff()">
     </div>
     <div class="filterBtns">
       <button class="filterBtn active" onclick="setFilter('all', this)">すべて</button>
@@ -430,12 +479,12 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
     </div>
   </div>
   <div class="receptionList" id="receptionList">
-    <div class="loadingRow">読み込み中…</div>
+    <div class="loadingRow">読み込み中...</div>
   </div>
   <div class="staffActionBar">
-    <button class="addManualBtn" onclick="staffToManual()">＋ 手動受付</button>
+    <button class="addManualBtn" onclick="staffToManual()">+ 手動受付</button>
     <button class="exportBtn" onclick="exportCSV()">CSV出力</button>
-    <button class="clearBtn" onclick="clearAll()">全消去</button>
+    <button class="clearBtn" onclick="confirmClearAll()">全消去</button>
   </div>
 </div>
 
@@ -500,7 +549,7 @@ let pendingQR = null;
 let reception = [];
 let staffFilter = 'all';
 let autoRefreshTimer = null;
-let localStatusOverrides = {}; // {id: {status, ts}}
+let localStatusOverrides = {};
 let pinBuffer = '';
 let pinTarget = 'staff';
 let selectedTimeVal = '';
@@ -510,6 +559,58 @@ let cardVal = '持参';
 let selectedPatient = null;
 let staffOpen = false;
 let returnToStaff = false;
+let wakeLock = null;
+
+// ===== SCREEN WAKE LOCK (iPad kiosk) =====
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    }
+  } catch (e) { /* wake lock not supported or failed */ }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    requestWakeLock();
+    // iPadスリープ復帰時にカメラが止まることがあるため自動再起動
+    if (cameraStarted) {
+      cameraStarted = false;
+      if (html5QrCode) {
+        try { html5QrCode.stop().catch(() => {}); } catch(e) {}
+        html5QrCode = null;
+      }
+      document.getElementById('reader').innerHTML = '';
+      setTimeout(() => startCamera(), 800);
+    }
+  }
+});
+
+// ===== HTTPS CHECK =====
+function checkHttps() {
+  const loc = window.location;
+  const isSecure = loc.protocol === 'https:' || loc.hostname === 'localhost' || loc.hostname === '127.0.0.1';
+  if (loc.protocol === 'file:') {
+    document.getElementById('httpsDetail').textContent =
+      'file:// プロトコルで開いています。HTTPSのWebサーバーが必要です。';
+    document.getElementById('httpsWarning').classList.add('active');
+    return false;
+  }
+  if (!isSecure) {
+    document.getElementById('httpsDetail').textContent =
+      '現在のURL: ' + loc.href;
+    document.getElementById('httpsWarning').classList.add('active');
+    return false;
+  }
+  return true;
+}
+
+function dismissHttpsWarning() {
+  document.getElementById('httpsWarning').classList.remove('active');
+  // Camera won't work, but manual mode is available
+  document.getElementById('scanStatus').textContent = 'カメラ使用不可（HTTPS必須）';
+}
 
 // ===== SETTINGS =====
 function loadSettings() {
@@ -524,7 +625,12 @@ function loadSettings() {
 
 function saveSettings() {
   const pinVal = document.getElementById('setPIN').value.trim();
-  if (pinVal) settings.pin = pinVal;
+  if (pinVal && pinVal.length === 4 && /^\d{4}$/.test(pinVal)) {
+    settings.pin = pinVal;
+  } else if (pinVal) {
+    toast('PINは4桁の数字で入力してください', 'error');
+    return;
+  }
   const gasVal = document.getElementById('setGasUrl').value.trim();
   if (gasVal) settings.gasUrl = gasVal;
   const haropeVal = document.getElementById('setHaropeUrl').value.trim();
@@ -546,7 +652,6 @@ function openSettingsPanel() {
 }
 
 function openSettingsFromPin() {
-  // Allow opening settings from PIN screen without needing correct PIN
   closePinOverlay();
   openSettingsPanel();
 }
@@ -599,7 +704,7 @@ function handleCsvFile(file) {
       csvData = rows.filter(r => r.karte_number);
       csvLoaded = true;
       localStorage.setItem('csv_cache', e.target.result);
-      const msg = `✓ ${csvData.length}件読み込み完了`;
+      const msg = csvData.length + '件読み込み完了';
       document.getElementById('csvStatusMsg').textContent = msg;
       toast(msg, 'success');
       setTimeout(() => {
@@ -609,7 +714,12 @@ function handleCsvFile(file) {
       }, 700);
     } catch(err) {
       document.getElementById('csvStatusMsg').textContent = 'エラー: ' + err.message;
+      toast('CSV読み込みエラー', 'error');
     }
+  };
+  reader.onerror = () => {
+    document.getElementById('csvStatusMsg').textContent = 'ファイル読み込みエラー';
+    toast('ファイル読み込みエラー', 'error');
   };
   reader.readAsText(file, 'UTF-8');
 }
@@ -624,7 +734,7 @@ function updateCsvInfoBar() {
   const bar = document.getElementById('csvInfoBar');
   if (csvLoaded && csvData.length) {
     bar.style.display = 'block';
-    bar.textContent = `患者データ: ${csvData.length}件読み込み済み`;
+    bar.textContent = '患者データ: ' + csvData.length + '件読み込み済み';
   } else {
     bar.style.display = 'none';
   }
@@ -646,29 +756,69 @@ dropZone.addEventListener('drop', e => {
 // ===== CAMERA / QR =====
 let html5QrCode = null;
 let scanCooldown = false;
+let cameraStarted = false;
 
 function startCamera() {
-  if (html5QrCode) return;
+  // Don't start camera if not secure context
+  if (!window.isSecureContext && window.location.protocol !== 'file:') {
+    document.getElementById('scanStatus').textContent = 'カメラ使用不可（HTTPS必須）';
+    return;
+  }
+
+  if (cameraStarted) return;
+
+  // Clean up previous instance if exists
+  if (html5QrCode) {
+    try {
+      html5QrCode.stop().catch(() => {});
+    } catch(e) {}
+    html5QrCode = null;
+  }
+
   html5QrCode = new Html5Qrcode('reader');
+  document.getElementById('scanStatus').textContent = 'カメラ起動中...';
+  document.getElementById('cameraRetryBtn').style.display = 'none';
+
   Html5Qrcode.getCameras().then(cameras => {
     if (!cameras || cameras.length === 0) {
       document.getElementById('scanStatus').textContent = 'カメラが見つかりません';
-      return;
+      document.getElementById('cameraRetryBtn').style.display = 'inline-block';
+      throw new Error('NO_CAMERAS');
     }
+    // Prefer back camera
     const cam = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[cameras.length - 1];
-    html5QrCode.start(
+    return html5QrCode.start(
       cam.id,
       { fps: 10, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 },
       onQRSuccess,
-      () => {}
-    ).then(() => {
-      document.getElementById('scanStatus').textContent = 'QRコードをかざしてください';
-    }).catch(err => {
-      document.getElementById('scanStatus').textContent = 'カメラ起動失敗: ' + err;
-    });
+      () => {} // ignore scan failures (normal when no QR visible)
+    );
+  }).then(() => {
+    cameraStarted = true;
+    document.getElementById('scanStatus').textContent = 'QRコードをかざしてください';
+    document.getElementById('cameraRetryBtn').style.display = 'none';
   }).catch(err => {
-    document.getElementById('scanStatus').textContent = 'カメラアクセス拒否: ' + err;
+    if (err && err.message === 'NO_CAMERAS') return; // already handled above
+    console.error('Camera error:', err);
+    const errStr = String(err);
+    if (errStr.includes('NotAllowedError') || errStr.includes('Permission')) {
+      document.getElementById('scanStatus').textContent = 'カメラの使用が許可されていません。設定からカメラを許可してください。';
+    } else {
+      document.getElementById('scanStatus').textContent = 'カメラ起動失敗';
+    }
+    document.getElementById('cameraRetryBtn').style.display = 'inline-block';
   });
+}
+
+function retryCamera() {
+  cameraStarted = false;
+  if (html5QrCode) {
+    try { html5QrCode.stop().catch(() => {}); } catch(e) {}
+    html5QrCode = null;
+  }
+  // Clear the reader element and recreate
+  document.getElementById('reader').innerHTML = '';
+  startCamera();
 }
 
 function onQRSuccess(text) {
@@ -681,8 +831,19 @@ function onQRSuccess(text) {
     toast('患者データが見つかりません: ' + karteNumber, 'error');
     return;
   }
-  pendingQR = { karte_number: karteNumber, patient };
+  pendingQR = { karte_number: karteNumber, patient: patient };
   showConfirm(karteNumber, patient);
+}
+
+// ===== SUCCESS OVERLAY =====
+function showSuccess(name) {
+  document.getElementById('successName').textContent = name;
+  document.getElementById('successOverlay').classList.add('active');
+  // Vibrate if supported
+  if (navigator.vibrate) navigator.vibrate(200);
+  setTimeout(() => {
+    document.getElementById('successOverlay').classList.remove('active');
+  }, 3000);
 }
 
 // ===== CONFIRM OVERLAY =====
@@ -691,12 +852,12 @@ function showConfirm(karteNumber, patient) {
   document.getElementById('cPetName').textContent = patient ? patient.pet_name : karteNumber;
   document.getElementById('cOwnerName').textContent = patient ? (patient.owner_name + ' 様') : '';
   document.getElementById('cKarte').textContent = 'カルテ番号: ' + karteNumber;
-  document.getElementById('cTel').textContent = patient ? ('TEL: ' + patient.tel) : '';
+  document.getElementById('cTel').textContent = patient && patient.tel ? ('TEL: ' + patient.tel) : '';
   const hasStatus = patient && (patient.pet_status || patient.owner_status);
   document.getElementById('cStatus').innerHTML = hasStatus
-    ? `<span class="statusBadge">${esc(patient.pet_status || patient.owner_status)}</span>` : '';
+    ? '<span class="statusBadge">' + esc(patient.pet_status || patient.owner_status) + '</span>' : '';
   document.getElementById('cAlready').innerHTML = already
-    ? '<div class="alreadyMsg">⚠ すでに受付済みです</div>' : '';
+    ? '<div class="alreadyMsg">すでに受付済みです</div>' : '';
   document.getElementById('confirmOk').textContent = already ? '再度受付する' : '受付する';
   document.getElementById('confirmOverlay').classList.add('active');
 }
@@ -708,51 +869,79 @@ function hideConfirm() {
 
 function doCheckIn() {
   if (!pendingQR) return;
-  const { karte_number, patient } = pendingQR;
-  const now = new Date();
-  const receptionTime = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
-  const entry = {
-    karte_number,
+  var karte_number = pendingQR.karte_number;
+  var patient = pendingQR.patient;
+  var now = new Date();
+  var receptionTime = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+  var entry = {
+    karte_number: karte_number,
     ownerName: patient ? patient.owner_name : '',
     petName: patient ? patient.pet_name : karte_number,
     owner_id: patient ? (patient.owner_id || '') : '',
     tel: patient ? (patient.tel || '') : '',
     source: 'qr',
     status: 'waiting',
-    receptionTime,
+    receptionTime: receptionTime,
     timestamp: now.toISOString(),
     selectedTime: '', selectedTimeDisplay: '',
     cardOption: '', cardNumber: '', insuranceOption: ''
   };
+  var displayName = entry.petName || entry.ownerName || karte_number;
   hideConfirm();
-  gasAdd(entry).then(id => {
+
+  // Push to reception immediately so auto-refresh doesn't lose it
+  reception.push(entry);
+
+  // Show success immediately for responsive UX
+  showSuccess(displayName);
+
+  gasAdd(entry).then(function(id) {
     if (id) {
       entry.id = id;
       localStatusOverrides[id] = { status: 'waiting', ts: Date.now() };
     }
-    reception.push(entry);
-    toast(entry.petName + ' さんの受付が完了しました', 'success');
-  }).catch(err => {
-    toast('受付登録に失敗しました', 'error');
-    console.error(err);
+  }).catch(function(err) {
+    console.error('gasAdd error (entry saved locally):', err);
   });
 }
 
 // ===== MANUAL SCREEN =====
 function buildTimeSlots() {
-  const container = document.getElementById('timeSlots');
+  var container = document.getElementById('timeSlots');
   container.innerHTML = '';
-  TIME_SLOTS.forEach(t => {
-    const btn = document.createElement('div');
+  var now = new Date();
+  var currentMinutes = now.getHours() * 60 + now.getMinutes();
+  var closestIdx = -1;
+  var closestDiff = Infinity;
+
+  TIME_SLOTS.forEach(function(t, idx) {
+    var parts = t.split(':');
+    var slotMinutes = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    var btn = document.createElement('div');
     btn.className = 'timeSlot';
+    // Mark past time slots
+    if (slotMinutes < currentMinutes - 15) {
+      btn.classList.add('past');
+    }
+    // Find closest future slot
+    var diff = slotMinutes - currentMinutes;
+    if (diff >= 0 && diff < closestDiff) {
+      closestDiff = diff;
+      closestIdx = idx;
+    }
     btn.textContent = t;
-    btn.onclick = () => selectTime(t, t, btn);
+    btn.onclick = function() { selectTime(t, t, btn); };
     container.appendChild(btn);
   });
+
+  // Highlight closest upcoming slot
+  if (closestIdx >= 0) {
+    container.children[closestIdx].classList.add('current');
+  }
 }
 
 function selectTime(val, display, el) {
-  document.querySelectorAll('.timeSlot').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.timeSlot').forEach(function(b) { b.classList.remove('selected'); });
   if (el) el.classList.add('selected');
   selectedTimeVal = val;
   selectedTimeDisplay = display;
@@ -761,41 +950,44 @@ function selectTime(val, display, el) {
 
 function selectCustomTime(val) {
   if (!val) return;
-  document.querySelectorAll('.timeSlot').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.timeSlot').forEach(function(b) { b.classList.remove('selected'); });
   selectedTimeVal = val;
   selectedTimeDisplay = val;
 }
 
 function selectRadio(type, el) {
-  const groupId = type === 'insurance' ? 'insuranceGroup' : 'cardGroup';
-  document.querySelectorAll('#' + groupId + ' .radioBtn').forEach(b => b.classList.remove('selected'));
+  var groupId = type === 'insurance' ? 'insuranceGroup' : 'cardGroup';
+  document.querySelectorAll('#' + groupId + ' .radioBtn').forEach(function(b) { b.classList.remove('selected'); });
   el.classList.add('selected');
   if (type === 'insurance') insuranceVal = el.dataset.val;
   else cardVal = el.dataset.val;
 }
 
 function onPatientSearch(q) {
-  const container = document.getElementById('searchResults');
+  var container = document.getElementById('searchResults');
   if (!q || !csvLoaded || !csvData.length) { container.style.display = 'none'; return; }
-  const ql = q.toLowerCase();
-  const results = csvData.filter(r =>
-    r.owner_name.toLowerCase().includes(ql) ||
-    (r.owner_kana && r.owner_kana.toLowerCase().includes(ql)) ||
-    r.pet_name.toLowerCase().includes(ql) ||
-    r.karte_number.includes(q)
-  ).slice(0, 10);
+  var ql = q.toLowerCase();
+  var results = csvData.filter(function(r) {
+    return r.owner_name.toLowerCase().includes(ql) ||
+      (r.owner_kana && r.owner_kana.toLowerCase().includes(ql)) ||
+      r.pet_name.toLowerCase().includes(ql) ||
+      r.karte_number.includes(q);
+  }).slice(0, 10);
   if (!results.length) { container.style.display = 'none'; return; }
-  container.innerHTML = results.map(r =>
-    `<div class="searchHint" onclick="selectPatient('${esc(r.karte_number)}')">
-      <strong>${esc(r.pet_name)}</strong> / ${esc(r.owner_name)}
-      <small>&nbsp;${esc(r.karte_number)}</small>
-    </div>`
-  ).join('');
+  container.innerHTML = '';
+  results.forEach(function(r) {
+    var div = document.createElement('div');
+    div.className = 'searchHint';
+    div.innerHTML = '<strong>' + esc(r.pet_name) + '</strong> / ' + esc(r.owner_name) +
+      ' <small>' + esc(r.karte_number) + '</small>';
+    div.addEventListener('click', function() { selectPatient(r.karte_number); });
+    container.appendChild(div);
+  });
   container.style.display = 'block';
 }
 
 function selectPatient(karteNumber) {
-  const p = lookupKarte(karteNumber);
+  var p = lookupKarte(karteNumber);
   if (!p) return;
   selectedPatient = p;
   document.getElementById('manualOwnerName').value = p.owner_name;
@@ -816,14 +1008,15 @@ function resetManualForm() {
   selectedTimeVal = ''; selectedTimeDisplay = '';
   insuranceVal = 'なし'; cardVal = '持参';
   selectedPatient = null;
-  ['manualOwnerName','manualPetName','manualKarte','manualCardNumber','patientSearch'].forEach(id => {
+  ['manualOwnerName','manualPetName','manualKarte','manualCardNumber','patientSearch'].forEach(function(id) {
     document.getElementById(id).value = '';
   });
-  document.querySelectorAll('.timeSlot').forEach(b => b.classList.remove('selected'));
-  document.querySelectorAll('#insuranceGroup .radioBtn').forEach(b => b.classList.toggle('selected', b.dataset.val === 'なし'));
-  document.querySelectorAll('#cardGroup .radioBtn').forEach(b => b.classList.toggle('selected', b.dataset.val === '持参'));
+  document.querySelectorAll('.timeSlot').forEach(function(b) { b.classList.remove('selected'); });
+  document.querySelectorAll('#insuranceGroup .radioBtn').forEach(function(b) { b.classList.toggle('selected', b.dataset.val === 'なし'); });
+  document.querySelectorAll('#cardGroup .radioBtn').forEach(function(b) { b.classList.toggle('selected', b.dataset.val === '持参'); });
   document.getElementById('customTime').value = '';
   document.getElementById('searchResults').style.display = 'none';
+  document.getElementById('submitManualBtn').disabled = false;
 }
 
 function hideManual() {
@@ -838,40 +1031,46 @@ function staffToManual() {
 }
 
 function submitManual() {
-  const ownerName = document.getElementById('manualOwnerName').value.trim();
-  const petName = document.getElementById('manualPetName').value.trim();
+  var ownerName = document.getElementById('manualOwnerName').value.trim();
+  var petName = document.getElementById('manualPetName').value.trim();
   if (!ownerName && !petName) { toast('飼い主名またはペット名を入力してください', 'error'); return; }
-  const karteNumber = document.getElementById('manualKarte').value.trim();
-  const cardNumber = document.getElementById('manualCardNumber').value.trim();
-  const now = new Date();
-  const receptionTime = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
-  const entry = {
+  var karteNumber = document.getElementById('manualKarte').value.trim();
+  var cardNumber = document.getElementById('manualCardNumber').value.trim();
+
+  // Prevent double submission
+  var btn = document.getElementById('submitManualBtn');
+  btn.disabled = true;
+
+  var now = new Date();
+  var receptionTime = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+  var entry = {
     karte_number: karteNumber,
-    ownerName,
+    ownerName: ownerName,
     petName: petName || ownerName,
     owner_id: selectedPatient ? (selectedPatient.owner_id || '') : '',
     tel: selectedPatient ? (selectedPatient.tel || '') : '',
     source: 'manual',
     status: 'waiting',
-    receptionTime,
+    receptionTime: receptionTime,
     timestamp: now.toISOString(),
     selectedTime: selectedTimeVal,
     selectedTimeDisplay: selectedTimeDisplay || selectedTimeVal,
     cardOption: cardVal,
-    cardNumber,
+    cardNumber: cardNumber,
     insuranceOption: insuranceVal
   };
-  gasAdd(entry).then(id => {
+  // Push to reception immediately so auto-refresh doesn't lose it
+  reception.push(entry);
+  toast((entry.petName || entry.ownerName) + ' さんを受付しました', 'success');
+  hideManual();
+
+  gasAdd(entry).then(function(id) {
     if (id) {
       entry.id = id;
       localStatusOverrides[id] = { status: 'waiting', ts: Date.now() };
     }
-    reception.push(entry);
-    toast((entry.petName || entry.ownerName) + ' さんを受付しました', 'success');
-    hideManual();
-  }).catch(err => {
-    toast('登録に失敗しました', 'error');
-    console.error(err);
+  }).catch(function(err) {
+    console.error('gasAdd error (entry saved locally):', err);
   });
 }
 
@@ -902,7 +1101,7 @@ function pinDel() {
 }
 
 function updatePinDots() {
-  for (let i = 0; i < 4; i++) {
+  for (var i = 0; i < 4; i++) {
     document.getElementById('dot' + i).classList.toggle('filled', i < pinBuffer.length);
   }
 }
@@ -916,7 +1115,7 @@ function checkPin() {
     document.getElementById('pinError').textContent = 'PINが違います';
     pinBuffer = '';
     updatePinDots();
-    setTimeout(() => { document.getElementById('pinError').textContent = ''; }, 1500);
+    setTimeout(function() { document.getElementById('pinError').textContent = ''; }, 1500);
   }
 }
 
@@ -924,7 +1123,7 @@ function checkPin() {
 function openStaff() {
   staffOpen = true;
   document.getElementById('staffPanel').classList.add('active');
-  gasGetAll().then(() => renderStaff());
+  gasGetAll().then(function() { renderStaff(); });
   startAutoRefresh();
 }
 
@@ -936,8 +1135,8 @@ function closeStaff() {
 
 function startAutoRefresh() {
   stopAutoRefresh();
-  autoRefreshTimer = setInterval(() => {
-    gasGetAll().then(() => renderStaff());
+  autoRefreshTimer = setInterval(function() {
+    gasGetAll().then(function() { renderStaff(); });
   }, 10000);
 }
 
@@ -947,74 +1146,74 @@ function stopAutoRefresh() {
 
 function setFilter(f, el) {
   staffFilter = f;
-  document.querySelectorAll('.filterBtn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filterBtn').forEach(function(b) { b.classList.remove('active'); });
   el.classList.add('active');
   renderStaff();
 }
 
 function renderStaff() {
-  const q = (document.getElementById('staffSearch').value || '').toLowerCase();
-  let filtered = reception.filter(r => {
+  var q = (document.getElementById('staffSearch').value || '').toLowerCase();
+  var filtered = reception.filter(function(r) {
     if (staffFilter !== 'all' && r.status !== staffFilter) return false;
     if (q) {
-      const pn = (r.petName || '').toLowerCase();
-      const on = (r.ownerName || '').toLowerCase();
-      const kn = (r.karte_number || '');
+      var pn = (r.petName || '').toLowerCase();
+      var on = (r.ownerName || '').toLowerCase();
+      var kn = (r.karte_number || '');
       if (!pn.includes(q) && !on.includes(q) && !kn.includes(q)) return false;
     }
     return true;
   });
-  filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  filtered.sort(function(a, b) { return new Date(a.timestamp) - new Date(b.timestamp); });
 
   document.getElementById('statTotal').textContent = reception.length;
-  document.getElementById('statWaiting').textContent = reception.filter(r => r.status === 'waiting').length;
-  document.getElementById('statCalled').textContent = reception.filter(r => r.status === 'called').length;
-  document.getElementById('statDone').textContent = reception.filter(r => r.status === 'done').length;
+  document.getElementById('statWaiting').textContent = reception.filter(function(r) { return r.status === 'waiting'; }).length;
+  document.getElementById('statCalled').textContent = reception.filter(function(r) { return r.status === 'called'; }).length;
+  document.getElementById('statDone').textContent = reception.filter(function(r) { return r.status === 'done'; }).length;
 
-  const list = document.getElementById('receptionList');
+  var list = document.getElementById('receptionList');
   if (!filtered.length) {
     list.innerHTML = '<div class="noDataRow">該当する受付がありません</div>';
     return;
   }
 
-  list.innerHTML = filtered.map(r => {
-    const origIdx = reception.indexOf(r);
-    const statusLabel = { waiting: '待機中', called: '呼出済', done: '完了' }[r.status] || r.status;
-    const infoArr = [];
+  list.innerHTML = filtered.map(function(r) {
+    var origIdx = reception.indexOf(r);
+    var statusLabel = { waiting: '待機中', called: '呼出済', done: '完了' }[r.status] || r.status;
+    var infoArr = [];
     if (r.receptionTime) infoArr.push('受付 ' + r.receptionTime);
     if (r.selectedTimeDisplay) infoArr.push('予定 ' + r.selectedTimeDisplay);
     if (r.tel) infoArr.push(r.tel);
     if (r.insuranceOption && r.insuranceOption !== 'なし') infoArr.push('保険: ' + r.insuranceOption);
     if (r.cardOption) infoArr.push('診察券: ' + r.cardOption);
-    const sourceBadge = r.source === 'qr' ? '📱QR' : '✍手動';
-    const statusBtns = r.status === 'waiting'
-      ? `<button class="cardBtn call" onclick="updateStatus(${origIdx},'called')">呼出</button>`
+    var sourceBadge = r.source === 'qr' ? 'QR' : '手動';
+    var statusBtns = r.status === 'waiting'
+      ? '<button class="cardBtn call" onclick="updateStatus(' + origIdx + ',\'called\')">呼出</button>'
       : r.status === 'called'
-      ? `<button class="cardBtn done" onclick="updateStatus(${origIdx},'done')">完了</button>`
-      : `<button class="cardBtn waiting-btn" onclick="updateStatus(${origIdx},'waiting')">戻す</button>`;
-    return `<div class="receptionCard ${r.status}">
-      <div class="cardTop">
-        <div>
-          <div class="cardPetName">${esc(r.petName)} ${sourceBadge}</div>
-          <div class="cardKarte">${esc(r.ownerName)}${r.karte_number ? ' ・ ' + r.karte_number : ''}</div>
-        </div>
-        <span class="statusBadge2 ${r.status}">${statusLabel}</span>
-      </div>
-      <div class="cardInfo">${infoArr.map(esc).join(' | ')}</div>
-      <div class="cardBtns">
-        ${r.owner_id ? `<button class="cardBtn petorelu" onclick="openPetorelu(${origIdx})">ペトレル</button>` : ''}
-        <button class="cardBtn harope" onclick="openHarope()">ハロぺH</button>
-        ${statusBtns}
-        <button class="cardBtn del" onclick="deleteEntry(${origIdx})">削除</button>
-      </div>
-    </div>`;
+      ? '<button class="cardBtn done" onclick="updateStatus(' + origIdx + ',\'done\')">完了</button>'
+      : '<button class="cardBtn waiting-btn" onclick="updateStatus(' + origIdx + ',\'waiting\')">戻す</button>';
+    return '<div class="receptionCard ' + r.status + '">' +
+      '<div class="cardTop">' +
+        '<div>' +
+          '<div class="cardPetName">' + esc(r.petName) + ' <small style="font-size:11px;color:#9ca3af;font-weight:400">' + sourceBadge + '</small></div>' +
+          '<div class="cardKarte">' + esc(r.ownerName) + (r.karte_number ? ' / ' + esc(r.karte_number) : '') + '</div>' +
+        '</div>' +
+        '<span class="statusBadge2 ' + r.status + '">' + statusLabel + '</span>' +
+      '</div>' +
+      '<div class="cardInfo">' + infoArr.map(esc).join(' | ') + '</div>' +
+      '<div class="cardBtns">' +
+        (r.owner_id ? '<button class="cardBtn petorelu" onclick="openPetorelu(' + origIdx + ')">ペトレル</button>' : '') +
+        '<button class="cardBtn harope" onclick="openHarope()">ハロぺH</button>' +
+        statusBtns +
+        '<button class="cardBtn del" onclick="deleteEntry(' + origIdx + ')">削除</button>' +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 
 function openPetorelu(i) {
-  const r = reception[i];
+  var r = reception[i];
   if (!r || !r.owner_id) { toast('owner_idが見つかりません', 'error'); return; }
-  window.open('https://petorelu-clinic.jp/#/main/owners/' + r.owner_id, '_blank');
+  window.open('https://petorelu-clinic.jp/#/main/owners/' + encodeURIComponent(r.owner_id), '_blank');
 }
 
 function openHarope() {
@@ -1022,14 +1221,14 @@ function openHarope() {
 }
 
 function updateStatus(i, newStatus) {
-  const r = reception[i];
+  var r = reception[i];
   if (!r) return;
-  const old = r.status;
+  var old = r.status;
   r.status = newStatus;
   if (r.id) localStatusOverrides[r.id] = { status: newStatus, ts: Date.now() };
   renderStaff();
   if (r.id) {
-    gasUpdate(r.id, newStatus).catch(err => {
+    gasUpdate(r.id, newStatus).catch(function(err) {
       console.error('updateStatus error:', err);
       r.status = old;
       if (r.id) delete localStatusOverrides[r.id];
@@ -1040,37 +1239,38 @@ function updateStatus(i, newStatus) {
 }
 
 function deleteEntry(i) {
-  const r = reception[i];
+  var r = reception[i];
   if (!r) return;
-  if (!confirm('「' + (r.petName || r.ownerName) + '」の受付を削除しますか？')) return;
-  const id = r.id;
+  if (!confirm(r.petName + ' の受付を削除しますか？')) return;
+  var id = r.id;
   reception.splice(i, 1);
   renderStaff();
-  if (id) gasDelete(id).catch(err => console.error('delete error:', err));
+  if (id) gasDelete(id).catch(function(err) { console.error('delete error:', err); });
 }
 
-function clearAll() {
+function confirmClearAll() {
   if (!confirm('本日の受付一覧をすべて削除しますか？\nこの操作は取り消せません。')) return;
   reception = [];
   localStatusOverrides = {};
   renderStaff();
-  gasClearAll().catch(err => console.error('clearAll error:', err));
+  gasClearAll().catch(function(err) { console.error('clearAll error:', err); });
 }
 
 function exportCSV() {
-  const headers = ['受付時刻','ペット名','飼い主名','カルテ番号','時間帯','保険','診察券','ステータス','来院方法'];
-  const rows = reception.map(r => [
+  if (!reception.length) { toast('出力するデータがありません', 'error'); return; }
+  var headers = ['受付時刻','ペット名','飼い主名','カルテ番号','時間帯','保険','診察券','ステータス','来院方法'];
+  var rows = reception.map(function(r) { return [
     r.receptionTime, r.petName, r.ownerName, r.karte_number,
     r.selectedTimeDisplay, r.insuranceOption, r.cardOption,
     { waiting:'待機中', called:'呼出済', done:'完了' }[r.status] || r.status,
     r.source === 'qr' ? 'QR自動' : '手動入力'
-  ]);
-  const csv = [headers, ...rows].map(r =>
-    r.map(c => '"' + String(c || '').replace(/"/g, '""') + '"').join(',')
-  ).join('\n');
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  ]; });
+  var csv = [headers].concat(rows).map(function(r) {
+    return r.map(function(c) { return '"' + String(c || '').replace(/"/g, '""') + '"'; }).join(',');
+  }).join('\n');
+  var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
   a.href = url;
   a.download = '受付一覧_' + new Date().toISOString().slice(0,10) + '.csv';
   a.click();
@@ -1078,37 +1278,82 @@ function exportCSV() {
 }
 
 // ===== GAS API =====
+// Robust fetch wrapper for GAS web apps (handles 302 redirects, CORS, timeouts)
+function gasFetch(url, options) {
+  options = options || {};
+  // Add timeout via AbortController
+  var controller = new AbortController();
+  var timeoutId = setTimeout(function() { controller.abort(); }, 15000);
+  options.signal = controller.signal;
+  // Ensure redirect following
+  options.redirect = 'follow';
+
+  return fetch(url, options)
+    .then(function(r) {
+      clearTimeout(timeoutId);
+      // GAS sometimes returns text that needs parsing
+      return r.text();
+    })
+    .then(function(text) {
+      try {
+        return JSON.parse(text);
+      } catch(e) {
+        // GAS may wrap response in HTML on error
+        console.warn('GAS response parse error:', text.substring(0, 200));
+        return null;
+      }
+    })
+    .catch(function(err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        console.warn('GAS request timed out');
+        throw new Error('タイムアウト');
+      }
+      throw err;
+    });
+}
+
 function gasAdd(entry) {
-  const url = settings.gasUrl || DEFAULT_GAS_URL;
-  const params = new URLSearchParams({ action: 'add', ...flattenEntry(entry) });
-  return fetch(url, { method: 'POST', body: params })
-    .then(r => r.json())
-    .then(j => j.id || null)
-    .catch(err => { console.error('gasAdd error:', err); return null; });
+  var url = settings.gasUrl || DEFAULT_GAS_URL;
+  var params = new URLSearchParams(Object.assign({ action: 'add' }, flattenEntry(entry)));
+  return gasFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString()
+  }).then(function(j) {
+    return j && j.id ? j.id : null;
+  });
 }
 
 function gasGetAll() {
-  const url = settings.gasUrl || DEFAULT_GAS_URL;
-  const syncMsg = document.getElementById('syncMsg');
-  if (syncMsg) syncMsg.textContent = '同期中…';
-  return fetch(url + '?action=getAll')
-    .then(r => r.json())
-    .then(j => {
-      const rows = Array.isArray(j) ? j : (j.data || []);
-      const now = Date.now();
-      reception = rows.map(r => {
-        const ov = localStatusOverrides[r.id];
-        return (ov && (now - ov.ts) < 60000) ? { ...r, status: ov.status } : r;
-      });
-      // Expire old overrides
-      for (const id of Object.keys(localStatusOverrides)) {
-        if ((now - localStatusOverrides[id].ts) >= 60000) delete localStatusOverrides[id];
+  var url = settings.gasUrl || DEFAULT_GAS_URL;
+  var syncMsg = document.getElementById('syncMsg');
+  if (syncMsg) syncMsg.textContent = '同期中...';
+  return gasFetch(url + '?action=getAll')
+    .then(function(j) {
+      if (!j) {
+        if (syncMsg) syncMsg.textContent = '同期失敗';
+        return reception;
       }
-      const t = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
+      var rows = Array.isArray(j) ? j : (j.data || []);
+      var now = Date.now();
+      // Preserve pending entries (no ID yet = still saving to GAS)
+      var pending = reception.filter(function(r) { return !r.id; });
+      reception = rows.map(function(r) {
+        var ov = localStatusOverrides[r.id];
+        return (ov && (now - ov.ts) < 60000) ? Object.assign({}, r, { status: ov.status }) : r;
+      });
+      // Re-add pending entries not yet confirmed by GAS
+      pending.forEach(function(p) { reception.push(p); });
+      // Expire old overrides
+      Object.keys(localStatusOverrides).forEach(function(id) {
+        if ((now - localStatusOverrides[id].ts) >= 60000) delete localStatusOverrides[id];
+      });
+      var t = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
       if (syncMsg) syncMsg.textContent = '同期済 ' + t;
       return reception;
     })
-    .catch(err => {
+    .catch(function(err) {
       console.error('gasGetAll error:', err);
       if (syncMsg) syncMsg.textContent = '同期失敗';
       return reception;
@@ -1116,31 +1361,41 @@ function gasGetAll() {
 }
 
 function gasUpdate(id, status) {
-  const url = settings.gasUrl || DEFAULT_GAS_URL;
-  const params = new URLSearchParams({ action: 'update', id, status });
-  return fetch(url, { method: 'POST', body: params })
-    .then(r => r.json())
-    .then(j => { if (j.success === false) throw new Error(j.error || 'update failed'); });
+  var url = settings.gasUrl || DEFAULT_GAS_URL;
+  var params = new URLSearchParams({ action: 'update', id: id, status: status });
+  return gasFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString()
+  }).then(function(j) {
+    if (j && j.success === false) throw new Error(j.error || 'update failed');
+  });
 }
 
 function gasDelete(id) {
-  const url = settings.gasUrl || DEFAULT_GAS_URL;
-  return fetch(url, { method: 'POST', body: new URLSearchParams({ action: 'delete', id }) })
-    .then(r => r.json());
+  var url = settings.gasUrl || DEFAULT_GAS_URL;
+  return gasFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ action: 'delete', id: id }).toString()
+  });
 }
 
 function gasClearAll() {
-  const url = settings.gasUrl || DEFAULT_GAS_URL;
-  return fetch(url, { method: 'POST', body: new URLSearchParams({ action: 'clearAll' }) })
-    .then(r => r.json());
+  var url = settings.gasUrl || DEFAULT_GAS_URL;
+  return gasFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ action: 'clearAll' }).toString()
+  });
 }
 
 function flattenEntry(entry) {
-  // Ensure all values are strings for URLSearchParams
-  const out = {};
-  for (const [k, v] of Object.entries(entry)) {
+  var out = {};
+  Object.keys(entry).forEach(function(k) {
+    var v = entry[k];
     out[k] = String(v == null ? '' : v);
-  }
+  });
   return out;
 }
 
@@ -1148,32 +1403,37 @@ function flattenEntry(entry) {
 function pad2(n) { return String(n).padStart(2, '0'); }
 function esc(s) {
   return String(s || '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-let toastTimer = null;
+var toastTimer = null;
 function toast(msg, type) {
-  const el = document.getElementById('toast');
+  var el = document.getElementById('toast');
   el.textContent = msg;
   el.className = 'show' + (type ? ' ' + type : '');
   if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = ''; }, 2500);
+  toastTimer = setTimeout(function() { el.className = ''; }, 2500);
 }
 
 // ===== INIT =====
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', function() {
   loadSettings();
+  requestWakeLock();
+
+  // Check HTTPS for camera
+  var isSecure = checkHttps();
 
   // Try to restore CSV from cache
-  const cached = localStorage.getItem('csv_cache');
+  var cached = localStorage.getItem('csv_cache');
   if (cached) {
     try {
-      const rows = parseCSV(cached);
-      csvData = rows.filter(r => r.karte_number);
+      var rows = parseCSV(cached);
+      csvData = rows.filter(function(r) { return r.karte_number; });
       if (csvData.length > 0) {
         csvLoaded = true;
         document.getElementById('csvLoader').classList.remove('active');
-        startCamera();
+        if (isSecure) startCamera();
         return;
       }
     } catch(e) { /* fall through */ }
