@@ -539,7 +539,19 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: #11
 const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbwtvien_xsRR8fZQJLv-5cxvpDFTRPN2c6j2YcxFYv99IZbXUGcb1Pxm8TbsBB4ssqM/exec';
 const DEFAULT_HAROPE_URL = 'https://hospital.halope.jp/acceptance';
 const DEFAULT_PIN = '1234';
-const TIME_SLOTS = ['9:00','9:30','10:00','10:30','11:00','11:30','12:00','13:00','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00'];
+const TIME_SLOTS = [
+  {val:'9:00',  display:'9:00~9:30'},
+  {val:'9:30',  display:'9:30~10:00'},
+  {val:'10:00', display:'10:00~10:30'},
+  {val:'10:30', display:'10:30~11:00'},
+  {val:'11:00', display:'11:00~11:30'},
+  {val:'11:30', display:'11:30~12:00'},
+  {val:'16:30', display:'16:30~17:00'},
+  {val:'17:00', display:'17:00~17:30'},
+  {val:'17:30', display:'17:30~18:00'},
+  {val:'18:00', display:'18:00~18:30'},
+  {val:'18:30', display:'18:30~19:00'}
+];
 
 // ===== STATE =====
 let settings = {};
@@ -914,8 +926,8 @@ function buildTimeSlots() {
   var closestIdx = -1;
   var closestDiff = Infinity;
 
-  TIME_SLOTS.forEach(function(t, idx) {
-    var parts = t.split(':');
+  TIME_SLOTS.forEach(function(slot, idx) {
+    var parts = slot.val.split(':');
     var slotMinutes = parseInt(parts[0]) * 60 + parseInt(parts[1]);
     var btn = document.createElement('div');
     btn.className = 'timeSlot';
@@ -929,8 +941,8 @@ function buildTimeSlots() {
       closestDiff = diff;
       closestIdx = idx;
     }
-    btn.textContent = t;
-    btn.onclick = function() { selectTime(t, t, btn); };
+    btn.textContent = slot.display;
+    btn.onclick = function() { selectTime(slot.val, slot.display, btn); };
     container.appendChild(btn);
   });
 
