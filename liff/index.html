@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>デジタル診察券 — 上桂動物病院</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --primary: #2c5f8a;
+  --primary-dark: #1e4a70;
+  --accent: #e8734a;
+  --bg: #f7f8fa;
+  --card: #ffffff;
+  --text: #333;
+  --muted: #888;
+  --success: #2a9d2a;
+  --danger: #cc3333;
+}
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Meiryo', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-text-size-adjust: 100%;
+}
+body { padding-bottom: env(safe-area-inset-bottom); }
+
+/* ─── Header ─── */
+.header {
+  background: var(--primary);
+  color: #fff;
+  text-align: center;
+  padding: 16px 16px 14px;
+}
+.header .logo { font-size: 11px; letter-spacing: 1px; opacity: 0.8; }
+.header h1 { font-size: 18px; margin-top: 4px; font-weight: 700; }
+
+/* ─── Loading ─── */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 16px;
+}
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid #e0e0e0;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Screens ─── */
+.screen { display: none; padding: 20px 16px; }
+.screen.active { display: block; }
+
+/* ─── Card (QR表示) ─── */
+.qr-card {
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+  padding: 24px 20px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+.qr-card .pet-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 2px;
+}
+.qr-card .owner-name {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.qr-card .karte-no {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.qr-container {
+  display: inline-block;
+  padding: 12px;
+  background: #fff;
+  border-radius: 12px;
+  border: 2px solid #e0e0e0;
+}
+.qr-container canvas { display: block; }
+.qr-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 12px;
+}
+
+/* ─── Pet tabs ─── */
+.pet-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 0 12px;
+  margin-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+.pet-tab {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 2px solid var(--primary);
+  background: #fff;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pet-tab.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+/* ─── Register Form ─── */
+.form-card {
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+  padding: 24px 20px;
+  margin-bottom: 16px;
+}
+.form-card h2 {
+  font-size: 18px;
+  margin-bottom: 16px;
+  color: var(--primary);
+}
+.form-group {
+  margin-bottom: 16px;
+}
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.form-group input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  font-size: 16px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.form-group input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.form-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+.btn-primary:active { background: var(--primary-dark); }
+.btn-primary:disabled { background: #ccc; }
+.btn-danger {
+  background: #fff;
+  color: var(--danger);
+  border: 2px solid var(--danger);
+  font-size: 14px;
+  padding: 10px;
+  margin-top: 12px;
+}
+.btn-secondary {
+  background: #f0f0f0;
+  color: var(--text);
+  margin-top: 10px;
+}
+
+/* ─── Error ─── */
+.error-msg {
+  background: #fff0f0;
+  color: var(--danger);
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  display: none;
+}
+.error-msg.show { display: block; }
+
+/* ─── Info ─── */
+.info-box {
+  background: #e8f4fd;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 13px;
+  color: var(--primary-dark);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+/* ─── Footer ─── */
+.footer {
+  text-align: center;
+  padding: 16px;
+  font-size: 11px;
+  color: var(--muted);
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">上桂動物病院</div>
+  <h1>デジタル診察券</h1>
+</div>
+
+<!-- ─── Loading ─── -->
+<div id="screenLoading" class="loading">
+  <div class="spinner"></div>
+  <div style="color:var(--muted);font-size:14px">読み込み中...</div>
+</div>
+
+<!-- ─── QR Code Display ─── -->
+<div id="screenQR" class="screen">
+  <div class="pet-tabs" id="petTabs"></div>
+  <div class="qr-card" id="qrCard">
+    <div class="pet-name" id="qrPetName"></div>
+    <div class="owner-name" id="qrOwnerName"></div>
+    <div class="karte-no" id="qrKarteNo"></div>
+    <div class="qr-container">
+      <canvas id="qrCanvas"></canvas>
+    </div>
+    <div class="qr-hint">受付iPadにかざしてください</div>
+  </div>
+  <button class="btn btn-secondary" onclick="showScreen('register')">別のペットを追加登録</button>
+  <button class="btn btn-danger" id="btnDeletePet" onclick="deletePet()">この診察券を削除</button>
+</div>
+
+<!-- ─── Register ─── -->
+<div id="screenRegister" class="screen">
+  <div class="info-box">
+    初回登録です。診察券またはカルテに記載されている<strong>カルテ番号</strong>を入力してください。
+  </div>
+  <div class="error-msg" id="regError"></div>
+  <div class="form-card">
+    <h2>診察券登録</h2>
+    <div class="form-group">
+      <label>カルテ番号</label>
+      <input type="text" id="regKarteNo" placeholder="例: 00123-01" inputmode="text" autocomplete="off">
+      <div class="form-hint">診察券やカルテに記載の番号（ハイフン含む）</div>
+    </div>
+    <div class="form-group">
+      <label>飼い主名</label>
+      <input type="text" id="regOwnerName" placeholder="例: 山田　太郎">
+    </div>
+    <div class="form-group">
+      <label>動物の名前</label>
+      <input type="text" id="regPetName" placeholder="例: ポチ">
+    </div>
+    <button class="btn btn-primary" id="btnRegister" onclick="register()">登録する</button>
+    <button class="btn btn-secondary" id="btnBackToQR" onclick="showScreen('qr')" style="display:none">戻る</button>
+  </div>
+</div>
+
+<!-- ─── Error Screen ─── -->
+<div id="screenError" class="screen">
+  <div class="form-card" style="text-align:center">
+    <h2 style="color:var(--danger)">エラー</h2>
+    <p id="errorDetail" style="margin:16px 0;font-size:14px;color:var(--muted)"></p>
+    <button class="btn btn-primary" onclick="location.reload()">再読み込み</button>
+  </div>
+</div>
+
+<div class="footer">上桂動物病院 デジタル診察券</div>
+
+<!-- ─── QRCode.js (MIT License) ─── -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+<!-- ─── LIFF SDK ─── -->
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+<script>
+// ======================================================================
+// 設定（デプロイ時に変更）
+// ======================================================================
+var CONFIG = {
+  // LIFF ID — LINE Developers Console から取得して設定
+  LIFF_ID: '2009695411-PYAjdPHU',
+
+  // GAS Web App URL — 既存の受付システムと同じURL
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbyuEWjBy2ubKv7lCUSjxf5fuDW3yWDhdvOhoTlrAHjU0DI7oea1tMUXQ_ivUhXU1m4K/exec'
+};
+
+// ======================================================================
+// State
+// ======================================================================
+var lineUserId = null;
+var myPets = [];       // [{karte_number, owner_name, pet_name}]
+var selectedPetIdx = 0;
+
+// ======================================================================
+// Init
+// ======================================================================
+(async function init() {
+  try {
+    // LIFF 初期化
+    await liff.init({ liffId: CONFIG.LIFF_ID });
+
+    // ログインチェック
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
+    }
+
+    // LINE user ID 取得
+    var profile = await liff.getProfile();
+    lineUserId = profile.userId;
+
+    // 登録済みか確認
+    var me = await gasRequest('lineGetMe', { line_user_id: lineUserId });
+
+    if (me.registered && me.pets && me.pets.length > 0) {
+      myPets = me.pets;
+      renderPetTabs();
+      showQR(0);
+      showScreen('qr');
+    } else {
+      showScreen('register');
+    }
+  } catch (e) {
+    console.error('Init error:', e);
+    // LIFF外でのテスト用: LIFFが初期化できない場合はローカルモード
+    if (e.code === 'INVALID_CONFIG' || e.code === 'INIT_FAILED') {
+      document.getElementById('errorDetail').textContent =
+        'LINEアプリ内から開いてください。\n（LIFF設定が未完了の場合は管理者に連絡してください）';
+      showScreen('error');
+    } else {
+      document.getElementById('errorDetail').textContent = e.message || 'エラーが発生しました';
+      showScreen('error');
+    }
+  }
+})();
+
+// ======================================================================
+// Screen Management
+// ======================================================================
+function showScreen(name) {
+  document.getElementById('screenLoading').style.display = 'none';
+  ['screenQR', 'screenRegister', 'screenError'].forEach(function(id) {
+    document.getElementById(id).classList.remove('active');
+  });
+  document.getElementById('screen' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+
+  // 登録画面の「戻る」ボタン表示制御
+  var backBtn = document.getElementById('btnBackToQR');
+  if (backBtn) {
+    backBtn.style.display = myPets.length > 0 ? 'block' : 'none';
+  }
+}
+
+// ======================================================================
+// QR Code Display
+// ======================================================================
+function showQR(idx) {
+  selectedPetIdx = idx;
+  var pet = myPets[idx];
+  if (!pet) return;
+
+  document.getElementById('qrPetName').textContent = pet.pet_name;
+  document.getElementById('qrOwnerName').textContent = pet.owner_name + ' 様';
+  document.getElementById('qrKarteNo').textContent = 'カルテNo. ' + pet.karte_number;
+
+  // QRコード生成（カルテ番号のプレーンテキスト — 既存受付システムと互換）
+  var canvas = document.getElementById('qrCanvas');
+  QRCode.toCanvas(canvas, pet.karte_number, {
+    width: 220,
+    margin: 2,
+    color: { dark: '#000000', light: '#ffffff' },
+    errorCorrectionLevel: 'M'
+  }, function(err) {
+    if (err) console.error('QR generation error:', err);
+  });
+
+  // タブのアクティブ状態更新
+  var tabs = document.querySelectorAll('.pet-tab');
+  tabs.forEach(function(t, i) {
+    t.classList.toggle('active', i === idx);
+  });
+}
+
+function renderPetTabs() {
+  var container = document.getElementById('petTabs');
+  container.innerHTML = '';
+  if (myPets.length <= 1) {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'flex';
+  myPets.forEach(function(pet, i) {
+    var tab = document.createElement('div');
+    tab.className = 'pet-tab' + (i === selectedPetIdx ? ' active' : '');
+    tab.textContent = pet.pet_name;
+    tab.onclick = function() { showQR(i); };
+    container.appendChild(tab);
+  });
+}
+
+// ======================================================================
+// Registration
+// ======================================================================
+async function register() {
+  var karteNo   = document.getElementById('regKarteNo').value.trim();
+  var ownerName = document.getElementById('regOwnerName').value.trim();
+  var petName   = document.getElementById('regPetName').value.trim();
+  var errEl     = document.getElementById('regError');
+
+  errEl.classList.remove('show');
+
+  if (!karteNo || !ownerName || !petName) {
+    errEl.textContent = '全ての項目を入力してください。';
+    errEl.classList.add('show');
+    return;
+  }
+
+  var btn = document.getElementById('btnRegister');
+  btn.disabled = true;
+  btn.textContent = '登録中...';
+
+  try {
+    var res = await gasRequest('lineRegister', {
+      line_user_id: lineUserId,
+      karte_number: karteNo,
+      owner_name: ownerName,
+      pet_name: petName
+    });
+
+    if (res.error) {
+      throw new Error(res.error);
+    }
+
+    // 登録成功 → ペットリスト再取得
+    var me = await gasRequest('lineGetMe', { line_user_id: lineUserId });
+    myPets = me.pets || [];
+    selectedPetIdx = myPets.length - 1;
+    renderPetTabs();
+    showQR(selectedPetIdx);
+    showScreen('qr');
+
+    // フォームリセット
+    document.getElementById('regKarteNo').value = '';
+    document.getElementById('regOwnerName').value = '';
+    document.getElementById('regPetName').value = '';
+  } catch (e) {
+    errEl.textContent = '登録に失敗しました: ' + (e.message || 'エラー');
+    errEl.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '登録する';
+  }
+}
+
+// ======================================================================
+// Delete Pet
+// ======================================================================
+async function deletePet() {
+  var pet = myPets[selectedPetIdx];
+  if (!pet) return;
+
+  if (!confirm(pet.pet_name + ' の診察券を削除しますか？')) return;
+
+  try {
+    await gasRequest('lineDelete', {
+      line_user_id: lineUserId,
+      karte_number: pet.karte_number
+    });
+
+    // リスト再取得
+    var me = await gasRequest('lineGetMe', { line_user_id: lineUserId });
+    myPets = me.pets || [];
+
+    if (myPets.length > 0) {
+      selectedPetIdx = 0;
+      renderPetTabs();
+      showQR(0);
+      showScreen('qr');
+    } else {
+      showScreen('register');
+    }
+  } catch (e) {
+    alert('削除に失敗しました: ' + (e.message || 'エラー'));
+  }
+}
+
+// ======================================================================
+// GAS API
+// ======================================================================
+function gasRequest(action, params) {
+  var url = CONFIG.GAS_URL;
+  var body = new URLSearchParams(Object.assign({ action: action }, params || {}));
+
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+    redirect: 'follow'
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(j) {
+    if (j && j.error) throw new Error(j.error);
+    return j;
+  });
+}
+</script>
+</body>
+</html>
