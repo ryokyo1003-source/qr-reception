@@ -61,40 +61,116 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 /* ─── Card (QR表示) ─── */
 .qr-card {
   background: var(--card);
-  border-radius: 16px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.08);
-  padding: 24px 20px;
+  border-radius: 18px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.10);
+  padding: 20px 20px 22px;
   text-align: center;
   margin-bottom: 16px;
+  border: 1px solid #eae3d4;
+}
+.card-title {
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+/* ロゴ中央をQRに置換するフレーム */
+.logo-frame {
+  position: relative;
+  width: 100%;
+  max-width: 260px;
+  margin: 0 auto 18px;
+  aspect-ratio: 611 / 1185;  /* 実画像の縦横比 */
+}
+.logo-frame .logo-full {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  /* 中央の文字領域（約37%〜73%）をマスクで隠す */
+  -webkit-mask-image: linear-gradient(to bottom,
+    #000 0%, #000 37%,
+    transparent 38%, transparent 72%,
+    #000 73%, #000 100%);
+          mask-image: linear-gradient(to bottom,
+    #000 0%, #000 37%,
+    transparent 38%, transparent 72%,
+    #000 73%, #000 100%);
+}
+.logo-frame .logo-fallback-emblem {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8% 0;
+  font-size: 64px;
+  line-height: 1;
+  color: var(--primary);
+}
+.logo-frame .qr-inside {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 62%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px;
+  box-sizing: border-box;
+}
+.logo-frame .qr-inside canvas,
+.logo-frame .qr-inside img,
+.logo-frame .qr-inside #qrCanvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 .qr-card .pet-name {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--primary);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+}
+.qr-card .pet-species {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--primary-dark);
+  background: #e8f4fd;
+  padding: 2px 10px;
+  border-radius: 10px;
+  margin-bottom: 8px;
 }
 .qr-card .owner-name {
   font-size: 14px;
   color: var(--muted);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 .qr-card .karte-no {
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 16px;
-}
-.qr-container {
   display: inline-block;
-  padding: 12px;
-  background: #fff;
-  border-radius: 12px;
-  border: 2px solid #e0e0e0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #3a332a;
+  background: #f6efe0;
+  padding: 4px 14px;
+  border-radius: 999px;
+  margin-bottom: 4px;
+  letter-spacing: 0.05em;
 }
-.qr-container canvas { display: block; }
 .qr-hint {
   font-size: 12px;
   color: var(--muted);
-  margin-top: 12px;
+  margin-top: 10px;
+}
+.qr-card .phone-info {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
 }
 
 /* ─── Pet tabs ─── */
@@ -146,7 +222,8 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   color: var(--text);
   margin-bottom: 6px;
 }
-.form-group input {
+.form-group input,
+.form-group select {
   width: 100%;
   padding: 12px 14px;
   border: 2px solid #ddd;
@@ -155,8 +232,17 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   font-family: inherit;
   transition: border-color 0.2s;
   -webkit-appearance: none;
+  background: #fff;
+  color: var(--text);
 }
-.form-group input:focus {
+.form-group select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%23888' d='M6 8L0 0h12z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+.form-group input:focus,
+.form-group select:focus {
   outline: none;
   border-color: var(--primary);
 }
@@ -246,13 +332,24 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 <div id="screenQR" class="screen">
   <div class="pet-tabs" id="petTabs"></div>
   <div class="qr-card" id="qrCard">
+    <div class="card-title">DIGITAL PATIENT CARD</div>
+    <div class="logo-frame">
+      <img class="logo-full" src="logo.png" alt="上桂動物病院"
+           onerror="this.style.display='none';document.getElementById('logoFallback').style.display='flex';">
+      <div class="logo-fallback-emblem" id="logoFallback" style="display:none">
+        <span>🐾</span>
+        <span>上桂動物病院</span>
+      </div>
+      <div class="qr-inside">
+        <div id="qrCanvas"></div>
+      </div>
+    </div>
     <div class="pet-name" id="qrPetName"></div>
+    <div class="pet-species" id="qrPetSpecies" style="display:none"></div>
     <div class="owner-name" id="qrOwnerName"></div>
     <div class="karte-no" id="qrKarteNo"></div>
-    <div class="qr-container">
-      <canvas id="qrCanvas"></canvas>
-    </div>
     <div class="qr-hint">受付iPadにかざしてください</div>
+    <div class="phone-info" id="qrPhone" style="display:none"></div>
   </div>
   <button class="btn btn-secondary" onclick="showScreen('register')">別のペットを追加登録</button>
   <button class="btn btn-danger" id="btnDeletePet" onclick="deletePet()">この診察券を削除</button>
@@ -272,12 +369,31 @@ body { padding-bottom: env(safe-area-inset-bottom); }
       <div class="form-hint">診察券やカルテに記載の番号（ハイフン含む）</div>
     </div>
     <div class="form-group">
-      <label>飼い主名</label>
+      <label>飼い主氏名</label>
       <input type="text" id="regOwnerName" placeholder="例: 山田　太郎">
     </div>
     <div class="form-group">
       <label>動物の名前</label>
       <input type="text" id="regPetName" placeholder="例: ポチ">
+    </div>
+    <div class="form-group">
+      <label>動物種類</label>
+      <select id="regSpecies">
+        <option value="">選択してください</option>
+        <option value="犬">犬</option>
+        <option value="猫">猫</option>
+        <option value="うさぎ">うさぎ</option>
+        <option value="鳥">鳥</option>
+        <option value="ハムスター">ハムスター</option>
+        <option value="フェレット">フェレット</option>
+        <option value="爬虫類">爬虫類</option>
+        <option value="その他">その他</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>電話番号</label>
+      <input type="tel" id="regPhone" placeholder="例: 090-1234-5678" inputmode="tel" autocomplete="tel">
+      <div class="form-hint">同姓同名の場合の特定に使用します</div>
     </div>
     <button class="btn btn-primary" id="btnRegister" onclick="register()">登録する</button>
     <button class="btn btn-secondary" id="btnBackToQR" onclick="showScreen('qr')" style="display:none">戻る</button>
@@ -296,7 +412,7 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 <div class="footer">上桂動物病院 デジタル診察券</div>
 
 <!-- ─── QRCode.js (MIT License) ─── -->
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <!-- ─── LIFF SDK ─── -->
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -317,28 +433,38 @@ var CONFIG = {
 // State
 // ======================================================================
 var lineUserId = null;
-var myPets = [];       // [{karte_number, owner_name, pet_name}]
+var myPets = [];       // [{karte_number, owner_name, pet_name, species, phone}]
 var selectedPetIdx = 0;
+var localMode = false; // LIFF/GAS が使えないときの localStorage フォールバック
 
 // ======================================================================
 // Init
 // ======================================================================
 (async function init() {
+  // LIFF SDK が読み込まれていない（プレビュー環境等）ならローカルモード
+  if (typeof liff === 'undefined') {
+    return initLocalMode('LIFF SDKが読み込めませんでした（ローカルプレビュー）');
+  }
+  // LINE内 (liff.line.me) でなければローカルモードで即動作（ブラウザ直開き用）
+  var isLineContext = /liff\.line\.me/.test(location.hostname) ||
+                      /^https:\/\/liff/.test(location.href);
+  if (!isLineContext) {
+    // Web公開用: LIFF ログインを強制せず localStorage のみ
+    return initLocalMode('LINEアプリ外のためローカルモードで起動');
+  }
   try {
-    // LIFF 初期化
-    await liff.init({ liffId: CONFIG.LIFF_ID });
-
-    // ログインチェック
+    // liff.init が返ってこない環境もあるので 4秒でタイムアウト
+    await Promise.race([
+      liff.init({ liffId: CONFIG.LIFF_ID }),
+      new Promise(function(_, rej) { setTimeout(function() { rej(new Error('LIFF init timeout')); }, 4000); })
+    ]);
     if (!liff.isLoggedIn()) {
       liff.login();
       return;
     }
-
-    // LINE user ID 取得
     var profile = await liff.getProfile();
     lineUserId = profile.userId;
 
-    // 登録済みか確認
     var me = await gasRequest('lineGetMe', { line_user_id: lineUserId });
 
     if (me.registered && me.pets && me.pets.length > 0) {
@@ -351,27 +477,48 @@ var selectedPetIdx = 0;
     }
   } catch (e) {
     console.error('Init error:', e);
-    // LIFF外でのテスト用: LIFFが初期化できない場合はローカルモード
-    if (e.code === 'INVALID_CONFIG' || e.code === 'INIT_FAILED') {
-      document.getElementById('errorDetail').textContent =
-        'LINEアプリ内から開いてください。\n（LIFF設定が未完了の場合は管理者に連絡してください）';
-      showScreen('error');
-    } else {
-      document.getElementById('errorDetail').textContent = e.message || 'エラーが発生しました';
-      showScreen('error');
-    }
+    return initLocalMode(e.message || 'LIFF初期化に失敗しました');
   }
 })();
+
+function initLocalMode(reason) {
+  localMode = true;
+  lineUserId = 'local-' + (localStorage.getItem('localUserId') || (function() {
+    var id = 'u' + Date.now().toString(36);
+    localStorage.setItem('localUserId', id);
+    return id;
+  })());
+  console.warn('[LocalMode]', reason);
+
+  myPets = loadLocalPets();
+  if (myPets.length > 0) {
+    renderPetTabs();
+    showQR(0);
+    showScreen('qr');
+  } else {
+    showScreen('register');
+  }
+}
+
+function loadLocalPets() {
+  try { return JSON.parse(localStorage.getItem('localPets') || '[]'); }
+  catch (e) { return []; }
+}
+function saveLocalPets() {
+  localStorage.setItem('localPets', JSON.stringify(myPets));
+}
 
 // ======================================================================
 // Screen Management
 // ======================================================================
 function showScreen(name) {
   document.getElementById('screenLoading').style.display = 'none';
-  ['screenQR', 'screenRegister', 'screenError'].forEach(function(id) {
+  var map = { qr: 'screenQR', register: 'screenRegister', error: 'screenError' };
+  Object.values(map).forEach(function(id) {
     document.getElementById(id).classList.remove('active');
   });
-  document.getElementById('screen' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  var target = map[name];
+  if (target) document.getElementById(target).classList.add('active');
 
   // 登録画面の「戻る」ボタン表示制御
   var backBtn = document.getElementById('btnBackToQR');
@@ -390,17 +537,35 @@ function showQR(idx) {
 
   document.getElementById('qrPetName').textContent = pet.pet_name;
   document.getElementById('qrOwnerName').textContent = pet.owner_name + ' 様';
-  document.getElementById('qrKarteNo').textContent = 'カルテNo. ' + pet.karte_number;
+  document.getElementById('qrKarteNo').textContent = pet.karte_number;
+
+  var speciesEl = document.getElementById('qrPetSpecies');
+  if (pet.species) {
+    speciesEl.textContent = pet.species;
+    speciesEl.style.display = 'inline-block';
+  } else {
+    speciesEl.style.display = 'none';
+  }
+
+  var phoneEl = document.getElementById('qrPhone');
+  if (pet.phone) {
+    phoneEl.textContent = 'TEL: ' + pet.phone;
+    phoneEl.style.display = 'block';
+  } else {
+    phoneEl.style.display = 'none';
+  }
 
   // QRコード生成（カルテ番号のプレーンテキスト — 既存受付システムと互換）
-  var canvas = document.getElementById('qrCanvas');
-  QRCode.toCanvas(canvas, pet.karte_number, {
-    width: 220,
-    margin: 2,
-    color: { dark: '#000000', light: '#ffffff' },
-    errorCorrectionLevel: 'M'
-  }, function(err) {
-    if (err) console.error('QR generation error:', err);
+  // 高解像度で生成し、CSSで親サイズに追従させる
+  var qrEl = document.getElementById('qrCanvas');
+  qrEl.innerHTML = '';
+  new QRCode(qrEl, {
+    text: pet.karte_number,
+    width: 480,
+    height: 480,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
   });
 
   // タブのアクティブ状態更新
@@ -434,11 +599,13 @@ async function register() {
   var karteNo   = document.getElementById('regKarteNo').value.trim();
   var ownerName = document.getElementById('regOwnerName').value.trim();
   var petName   = document.getElementById('regPetName').value.trim();
+  var species   = document.getElementById('regSpecies').value.trim();
+  var phone     = document.getElementById('regPhone').value.trim();
   var errEl     = document.getElementById('regError');
 
   errEl.classList.remove('show');
 
-  if (!karteNo || !ownerName || !petName) {
+  if (!karteNo || !ownerName || !petName || !species || !phone) {
     errEl.textContent = '全ての項目を入力してください。';
     errEl.classList.add('show');
     return;
@@ -449,20 +616,33 @@ async function register() {
   btn.textContent = '登録中...';
 
   try {
-    var res = await gasRequest('lineRegister', {
-      line_user_id: lineUserId,
-      karte_number: karteNo,
-      owner_name: ownerName,
-      pet_name: petName
-    });
-
-    if (res.error) {
-      throw new Error(res.error);
+    if (localMode) {
+      // localStorage にのみ保存
+      var existingIdx = myPets.findIndex(function(p) { return p.karte_number === karteNo; });
+      var record = {
+        karte_number: karteNo,
+        owner_name: ownerName,
+        pet_name: petName,
+        species: species,
+        phone: phone,
+        created_at: new Date().toISOString()
+      };
+      if (existingIdx >= 0) myPets[existingIdx] = record;
+      else myPets.push(record);
+      saveLocalPets();
+    } else {
+      var res = await gasRequest('lineRegister', {
+        line_user_id: lineUserId,
+        karte_number: karteNo,
+        owner_name: ownerName,
+        pet_name: petName,
+        species: species,
+        phone: phone
+      });
+      if (res.error) throw new Error(res.error);
+      var me = await gasRequest('lineGetMe', { line_user_id: lineUserId });
+      myPets = me.pets || [];
     }
-
-    // 登録成功 → ペットリスト再取得
-    var me = await gasRequest('lineGetMe', { line_user_id: lineUserId });
-    myPets = me.pets || [];
     selectedPetIdx = myPets.length - 1;
     renderPetTabs();
     showQR(selectedPetIdx);
@@ -472,6 +652,8 @@ async function register() {
     document.getElementById('regKarteNo').value = '';
     document.getElementById('regOwnerName').value = '';
     document.getElementById('regPetName').value = '';
+    document.getElementById('regSpecies').value = '';
+    document.getElementById('regPhone').value = '';
   } catch (e) {
     errEl.textContent = '登録に失敗しました: ' + (e.message || 'エラー');
     errEl.classList.add('show');
@@ -491,14 +673,17 @@ async function deletePet() {
   if (!confirm(pet.pet_name + ' の診察券を削除しますか？')) return;
 
   try {
-    await gasRequest('lineDelete', {
-      line_user_id: lineUserId,
-      karte_number: pet.karte_number
-    });
-
-    // リスト再取得
-    var me = await gasRequest('lineGetMe', { line_user_id: lineUserId });
-    myPets = me.pets || [];
+    if (localMode) {
+      myPets.splice(selectedPetIdx, 1);
+      saveLocalPets();
+    } else {
+      await gasRequest('lineDelete', {
+        line_user_id: lineUserId,
+        karte_number: pet.karte_number
+      });
+      var me = await gasRequest('lineGetMe', { line_user_id: lineUserId });
+      myPets = me.pets || [];
+    }
 
     if (myPets.length > 0) {
       selectedPetIdx = 0;
